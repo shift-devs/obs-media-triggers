@@ -23,27 +23,10 @@
         :alt: Twitter
         :target: https://twitter.com/obs-media-triggers
 
-.. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
-    :alt: Project generated with PyScaffold
-    :target: https://pyscaffold.org/
-
-|
 
 ==================
 obs-media-triggers
 ==================
 
 
-    Add a short description here!
-
-
-A longer description of your project goes here...
-
-
-.. _pyscaffold-notes:
-
-Note
-====
-
-This project has been set up using PyScaffold 4.5. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
+    Triggers for local media in OBS based on configurable Twitch events.
