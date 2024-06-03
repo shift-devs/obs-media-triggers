@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from logging import Logger, getLogger
-
-from urllib.parse import ParseResult, urljoin
+from .auth_app import AuthApp
 from twitchAPI.helper import first
+from logging import Logger, getLogger
+from urllib.parse import ParseResult, urljoin
+from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.twitch import Twitch, TwitchUser
-from twitchAPI.oauth import UserAuthenticationStorageHelper
 from twitchAPI.eventsub.webhook import EventSubWebhook
 from twitchAPI.eventsub.websocket import EventSubWebsocket
 from twitchAPI.type import AuthScope, TwitchAuthorizationException
@@ -23,6 +23,10 @@ class TwitchWrapper:
     def scopes() -> [AuthScope]:
         return [AuthScope.USER_READ_SUBSCRIPTIONS]
 
+    @staticmethod
+    def callback_url() -> str:
+        return "http://localhost:17563/login/confirm"
+
     @classmethod
     async def build(
         self: TwitchWrapper,
@@ -31,7 +35,9 @@ class TwitchWrapper:
         twt_app_url: ParseResult,
         twt_bot_id: str,
         esws_confirm: bool = True,
-        esws_timeout: int = 3,
+        esws_timeout: int = 10,
+        twt_callback_host: str = "localhost",
+        twt_callback_port: int = 17563,
     ) -> bool:
         # Setup Twitch Client
         self.LOG.info(f"Connecting to Twitch API at -> {twt_app_url.geturl()}")
@@ -42,20 +48,25 @@ class TwitchWrapper:
                 twt_app_secret,
                 base_url=f"{twt_app_url.geturl()}mock/",
                 auth_base_url=f"{twt_app_url.geturl()}auth/",
+                authenticate_app=False
             )
             self.api.auto_refresh_auth = True
 
             # Authenticate Twitch Bot
-            auth = UserAuthenticationStorageHelper(self.api, [AuthScope.CHANNEL_READ_SUBSCRIPTIONS])
-            await auth.bind()
-            self.bot: TwitchUser = await first(self.api.get_users())
+            auth: UserAuthenticator = UserAuthenticator(
+                self.api,
+                TwitchWrapper.scopes
+            )
+            auth_app: AuthApp = AuthApp(twitch=self.api, auth=auth)
+            auth_app.start()
+            self.api.authenticate_app(TwitchWrapper.scopes())
+
+            # self.bot: TwitchUser = await first(self.api.get_users())
 
             # Create and configure the EventSub APi Client
-            self.esws: EventSubWebhook = EventSubWebhook(
-                "localhost", 17563, api=self.api
-            )
-            self.esws.wait_for_subscription_confirm = esws_confirm
-            self.esws.wait_for_subscription_confirm_timeout = esws_timeout
+            # self.esws: EventSubWebhook = EventSubWebhook("localhost", 17563, self.api)
+            # self.esws.wait_for_subscription_confirm = esws_confirm
+            # self.esws.wait_for_subscription_confirm_timeout = esws_timeout
 
             return True
         except TwitchAuthorizationException as e:

@@ -10,4 +10,4 @@ python \
 		--obs-ws-passwd $OBS_WS_PASSWD \
 		--twitch-app-id $MOCK_OMT_CLIENT_ID \
 		--twitch-app-secret $MOCK_OMT_CLIENT_SECRET \
-		--twitch-app-url $MOCK_OMT_APP_URL
+		--twitch-app-url $OMT_APP_URL

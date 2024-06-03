@@ -156,7 +156,7 @@ def setup_logging(log_level):
 async def main():
     args = parse_args()
     setup_logging(args.log_level)
-    bot_username = "24853846"
+    bot_username = "53100947"
 
     # Setup Twitch Connection
     twitch = TwitchWrapper()
