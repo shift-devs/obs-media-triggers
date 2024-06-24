@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<h1 class="p-2">Sign Up</h1>
+
+<form method="POST" class="row g-3 needs-validation" novalidate>
+    <div class="mb-3 form-floating needs-validation">
+        <input type="text" class="form-control" id="first_name" name="first_name" placeholder="First Name" required>
+        <label for="first_name" class="form-label">First Name</label>
+        <div class="valid-feedback">
+            Looks good!
+        </div>
+    </div>
+
+    <div class="mb-3 form-floating">
+        <input type="text" class="form-control" id="last_name" name="last_name" placeholder="Last Name">
+        <label for="last_name" class="form-label">Last Name</label>
+    </div>
+
+    <div class="mb-3 form-floating">
+        <input type="email" class="form-control" id="email" name="email" placeholder="Email">
+        <label for="email" class="form-label">Email</label>
+    </div>
+
+    <div class="mb-3 form-floating">
+        <input type="password" class="form-control" id="password" name="password" placeholder="Password"
+            aria-describedby="passwordHelp">
+        <label for="password" class="form-label">Password</label>
+
+        <div id="passwordHelp" class="form-text alert alert-warning" style="width: 40vw">
+            <p>Password Requirements:</p>
+            <ul>
+                <li>Between {{ password_strength_reqs.min_length }} - {{ password_strength_reqs.max_length }}
+                    Characters
+                </li>
+                {% if password_strength_reqs.requires_lowercase %}
+                <li>Atleast 1 Lowercase Character</li>
+                {% endif %}
+                {% if password_strength_reqs.requires_uppercase %}
+                <li>Atleast 1 Uppercase Character</li>
+                {% endif %}
+                {% if password_strength_reqs.requires_special_chars %}
+                <li>Atleast 1 Special Character</li>
+                {% endif %}
+                {% if password_strength_reqs.requires_digits %}
+                <li>Atleast 1 Digit</li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="mb-3 form-floating">
+        <input type="password" class="form-control alert-danger" id="password_confirm" name="password_confirm"
+            placeholder="Confirm Password">
+        <label for="password_confirm" class="form-label">Confirm Password</label>
+    </div>
+
+    <br />
+
+    <button type="submit" class="btn btn-primary">Sign Up</button>
+</form>
+{% endblock %}
