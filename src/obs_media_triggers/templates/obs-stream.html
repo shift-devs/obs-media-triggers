@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}OBS Stream{% endblock %}
+
+{% block content %}
+<h1 class="pb-3">OBS Stream -> {{ obs_client.url }} </h1>
+{% with scenes = obs_client.get_scene_list() %}
+
+<form>
+  <div>
+    <label for="active_scene">Active Scene</label>
+    <select type="text" name="active_scene" id="active_scene">
+      <option selected value="select active scene">select active scene</option>
+      {% for s in scenes['scenes'] %}
+      <option value="{{s['sceneName']}}">{{s['sceneName']}}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+
+
+{% endwith %}
+{% endblock %}

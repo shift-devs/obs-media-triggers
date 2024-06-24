@@ -28,6 +28,7 @@
                     {% if user.is_authenticated %}
                     <li><a id="users" href="{{ url_for('view_user.get_root') }}" class="nav-item nav-link">Users</a></li>
                     <li><a id="obs-clients" href="{{ url_for('view_obs.get_root') }}" class="nav-item nav-link">OBS Clients</a></li>
+                    <li><a id="twitch-login" href="{{ url_for('view_twitch.get_root') }}" class="nav-item nav-link">Twitch Login</a></li>
                     {% else %}
                     <li><a id="login" href="{{ url_for('view_auth.get_login') }}" class="nav-item nav-link">Login</a></li>
                     {% endif %}

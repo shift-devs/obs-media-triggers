@@ -43,7 +43,6 @@ class AuthApp(Flask):
     def login(self: AuthApp):
         if self.twitch_is_disconnected():
             return {"error": "Application was not connected to twitch"}, 500
-        import ipdb; ipdb.set_trace()
         return redirect(self.auth.return_auth_url())
 
     async def login_confirm(self: AuthApp):

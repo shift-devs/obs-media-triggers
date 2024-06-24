@@ -23,18 +23,38 @@
       <td>{{oc.host}}</td>
       <td>{{oc.port}}</td>
       <td>{{'*' * oc.password.__len__()}}</td>
-      <td class="w-75">
-        {% if obs_manager.client_is_connected(oc.host, oc.port) %}
-        <i class="fa-solid fa-play" style="color: #00d700;"></i>
+      <td class="w-75" style="display: flex;">
+        {% if obs_manager.is_connected(oc.host, oc.port) %}
+        <form action="{{ url_for('view_obs.get_stream') }}" method="GET" novalidate>
+          <button type="submit"><i class="fa-solid fa-camera fa-2xl m-3" style="color: #B197FC;"></i></button>
+          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
+          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
+        </form>
+
+        <form action="{{ url_for('view_obs.post_disconnect') }}" method="POST" novalidate>
+          <button type="submit"><i class="fa-solid fa-pause m-3" style="color: #FFD43B;"></i></button>
+          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
+          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
+        </form>
         {% else %}
-        <i class="fa-solid fa-pause" style="color: #FFD43B;"></i>
+        <form action="{{ url_for('view_obs.post_connect') }}" method="POST" novalidate>
+          <button type="submit"><i class="fa-solid fa-play m-3" style="color: #00d700;"></i></button>
+          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
+          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
+        </form>
         {% endif %}
 
-        <i class="fa-solid fa-pen-to-square" style="color: #37aaff;"></i>
+        <form action="{{ url_for('view_obs.get_edit') }}" method="GET" novalidate>
+          <button type="submit" {% if obs_manager.is_connected(oc.host, oc.port) %}disabled{% endif %}><i
+              class="fa-solid fa-pen-to-square m-3" style="color: #37aaff;"></i></button>
+          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
+          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
+        </form>
+
         <form action="{{ url_for('view_obs.post_remove') }}" method="POST" novalidate>
-          <button type="submit"><i class="fa-solid fa-trash" style="color: #ff0000;"></i></button>
-          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible" style="width: 0; height: 0;">
-          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible" style="width: 0; height: 0;">
+          <button type="submit"><i class="fa-solid fa-trash m-3" style="color: #ff0000;"></i></button>
+          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
+          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
         </form>
       </td>
     </tr>

@@ -5,7 +5,7 @@ from logging import getLogger
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from .models import DB, User, OBSWebSocketClient
-from .views import view_home, view_auth, view_obs, view_user, PSUT
+from .views import view_home, view_auth, view_obs, view_twitch, view_user, PSUT
 from .controllers import OBSClientsManager, OBS_MANAGER
 
 LOG = getLogger(__name__)
@@ -45,6 +45,7 @@ class Dashboard(Flask):
         self.register_blueprint(view_home, url_prefix="/")
         self.register_blueprint(view_auth, url_prefix="/auth/")
         self.register_blueprint(view_obs, url_prefix="/obs/")
+        self.register_blueprint(view_twitch, url_prefix="/twitch/")
         self.register_blueprint(view_user, url_prefix="/user/")
 
         # Setup OBS clients manager
