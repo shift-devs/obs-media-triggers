@@ -13,6 +13,13 @@ class TwitchSession(DB.Model):
     twitch_expiration = Column(DateTime(timezone=True), default=func.now())
 
 
+class OBSWebSocketClient(DB.Model):
+    username = Column(Integer, ForeignKey("user.name"))
+    host = Column(String(256), primary_key=True)
+    port = Column(Integer, default=4455, primary_key=True)
+    password = Column(String(256))
+
+
 class User(DB.Model, UserMixin):
     name = Column(String(MAX_VARCHAR_LEN), primary_key=True)
     password = Column(String(MAX_VARCHAR_LEN))
