@@ -2,8 +2,6 @@
 
 {% block title %}OBS clients{% endblock %}
 
-
-
 {% block content %}
 <h1 class="pb-3">OBS clients</h1>
 
@@ -13,6 +11,7 @@
     <tr>
       <th scope="col">Host</th>
       <th scope="col">Port</th>
+      <th scope="col">Password</th>
       <th scope="col">Actions</th>
     </tr>
   </thead>
@@ -23,9 +22,20 @@
     <tr>
       <td>{{oc.host}}</td>
       <td>{{oc.port}}</td>
+      <td>{{'*' * oc.password.__len__()}}</td>
       <td class="w-75">
+        {% if obs_manager.client_is_connected(oc.host, oc.port) %}
+        <i class="fa-solid fa-play" style="color: #00d700;"></i>
+        {% else %}
+        <i class="fa-solid fa-pause" style="color: #FFD43B;"></i>
+        {% endif %}
+
         <i class="fa-solid fa-pen-to-square" style="color: #37aaff;"></i>
-        <i class="fa-solid fa-trash" style="color: #ff0000;"></i>
+        <form action="{{ url_for('view_obs.post_remove') }}" method="POST" novalidate>
+          <button type="submit"><i class="fa-solid fa-trash" style="color: #ff0000;"></i></button>
+          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible" style="width: 0; height: 0;">
+          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible" style="width: 0; height: 0;">
+        </form>
       </td>
     </tr>
 
@@ -35,7 +45,7 @@
 {% endif %}
 
 <div class="col-12 mt-4">
-  <a href="./add" class="btn btn-success" type="submit">+ New Client</a>
+  <a href="{{ url_for('view_obs.post_add') }}" class="btn btn-success">+ New Client</a>
 </div>
 {% endwith %}
 {% endblock %}

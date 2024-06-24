@@ -19,6 +19,8 @@ class OBSWebSocketClient(DB.Model):
     port = Column(Integer, default=4455, primary_key=True)
     password = Column(String(256))
 
+    def get_id(self, host, port) -> str:
+        return f'ws://{host}:{port}/'
 
 class User(DB.Model, UserMixin):
     name = Column(String(MAX_VARCHAR_LEN), primary_key=True)

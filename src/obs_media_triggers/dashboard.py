@@ -6,6 +6,7 @@ from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from .models import DB, User, OBSWebSocketClient
 from .views import view_home, view_auth, view_obs, view_user, PSUT
+from .controllers import OBSClientsManager, OBS_MANAGER
 
 LOG = getLogger(__name__)
 DEFAULT_DB_NAME = "obs-media-triggers.db"
@@ -21,6 +22,7 @@ class Dashboard(Flask):
     port: int
     db: SQLAlchemy
     login_manager: LoginManager
+    obs_manager: OBSClientsManager
 
     def __init__(
         self: Dashboard,
@@ -44,6 +46,9 @@ class Dashboard(Flask):
         self.register_blueprint(view_auth, url_prefix="/auth/")
         self.register_blueprint(view_obs, url_prefix="/obs/")
         self.register_blueprint(view_user, url_prefix="/user/")
+
+        # Setup OBS clients manager
+        self.obs_manager = OBS_MANAGER
 
         # Setup login manager
         self.login_manager = LoginManager(self)

@@ -48,11 +48,11 @@ def post_login():
         return redirect(url_for("view_auth.get_login"))
 
 
-@view_auth.route("/logout")
+@view_auth.route("/logout", methods=["GET"])
 @login_required
 def get_logout():
     logout_user()
-    return redirect(url_for('view_auth.logout'))
+    return redirect(url_for('view_home.get_root'))
 
 
 @view_auth.route("/signup", methods=["GET"])
