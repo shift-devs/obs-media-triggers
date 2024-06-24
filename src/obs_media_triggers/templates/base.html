@@ -26,11 +26,10 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
-                    <li><a id="users" href="/users" class="nav-item nav-link">Users</a></li>
+                    <li><a id="users" href="/user/" class="nav-item nav-link">Users</a></li>
+                    <li><a id="obs-clients" href="/obs/" class="nav-item nav-link">OBS Clients</a></li>
                     {% else %}
-                    <a id="login" href="/auth/login" class="nav-item nav-link">
-                        Login
-                    </a>
+                    <li><a id="login" href="/auth/login" class="nav-item nav-link">Login</a></li>
                     {% endif %}
                 </ul>
             </div>

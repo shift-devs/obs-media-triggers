@@ -1,12 +1,11 @@
 from __future__ import annotations
 import random, string
-from .auth import auth, PSUT
 from flask import Flask
-from .views import views
-from .models import DB, User
 from logging import getLogger
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_sqlalchemy import SQLAlchemy
+from .models import DB, User, OBSWebSocketClient
+from .views import view_home, view_auth, view_obs, view_user, PSUT
 
 LOG = getLogger(__name__)
 DEFAULT_DB_NAME = "obs-media-triggers.db"
@@ -41,20 +40,23 @@ class Dashboard(Flask):
         self.config["SQLALCHEMY_DATABASE_URI"] = db_uri
 
         # Register endpoints
-        self.register_blueprint(views, url_prefix="/")
-        self.register_blueprint(auth, url_prefix="/auth/")
+        self.register_blueprint(view_home, url_prefix="/")
+        self.register_blueprint(view_auth, url_prefix="/auth/")
+        self.register_blueprint(view_obs, url_prefix="/obs/")
+        self.register_blueprint(view_user, url_prefix="/user/")
 
         # Setup login manager
         self.login_manager = LoginManager(self)
-        self.login_manager.login_view = "auth.get_login"
+        self.login_manager.login_view = "view_auth.get_login"
 
         @self.login_manager.user_loader
         def load_user(username: str):
             return User.query.filter_by(name=username).one_or_none()
 
-        # Map callable functions
-        self.jinja_env.globals.update(get_all_users=self.get_all_users)
+        # Map callable functions to Jinja environment
         self.jinja_env.globals.update(password_strength_reqs=PSUT)
+        self.jinja_env.globals.update(get_all_users=self.get_all_users)
+        self.jinja_env.globals.update(get_all_obs_clients=self.get_all_obs_clients)
 
         with self.app_context():
             DB.init_app(self)
@@ -62,7 +64,11 @@ class Dashboard(Flask):
 
     def get_all_users(self: Dashboard) -> list[User]:
         res = DB.session.query(User).all()
-        LOG.info(res)
+        return DB.session.query(User).all()
+
+    def get_all_obs_clients(self: Dashboard) -> list[User]:
+        res = DB.session.query(OBSWebSocketClient).all()
+        LOG.debug(f'Found {len(res)} OBS clients in the db!')
         return res
 
     def run(self: Dashboard) -> any:

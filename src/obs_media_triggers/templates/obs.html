@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}OBS clients{% endblock %}
+
+
+
+{% block content %}
+<h1 class="pb-3">OBS clients</h1>
+
+{% with obs_clients = get_all_obs_clients() %}
+<table class="table text-break">
+  <thead>
+    <tr>
+      <th scope="col">Host</th>
+      <th scope="col">Port</th>
+      <th scope="col">Actions</th>
+    </tr>
+  </thead>
+
+  {% if obs_clients %}
+  <tbody>
+    {% for oc in obs_clients %}
+    <tr>
+      <td>{{oc.host}}</td>
+      <td>{{oc.port}}</td>
+      <td class="w-75">
+        <i class="fa-solid fa-pen-to-square" style="color: #37aaff;"></i>
+        <i class="fa-solid fa-trash" style="color: #ff0000;"></i>
+      </td>
+    </tr>
+
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<div class="col-12 mt-4">
+  <a href="./add" class="btn btn-success" type="submit">+ New Client</a>
+</div>
+{% endwith %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}New OBS Client{% endblock %}
+
+{% block js %}
+<script>
+    {% include "validation.js" %}
+</script>
+{% endblock %}
+
+{% block content %}
+<h1 class="pb-3">New OBS Client</h1>
+
+<form method="POST" class="row g-3 needs-validation" novalidate>
+    <div class="form-floating col-md-4">
+        <input type="text" class="form-control" id="host" name="host" placeholder="OBS Host" value="localhost">
+        <label for="host" class="form-label">OBS Host</label>
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-floating col-md-4">
+        <input type="number" class="form-control" id="port" name="port" placeholder="OBS Port" value="4455">
+        <label for="port" class="form-label">OBS Port</label>
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-floating col-md-4">
+        <input type="password" class="form-control" id="password" name="password" placeholder="OBS Password" required>
+        <label for="password">OBS Password</label>
+        <div class="invalid-feedback">Please provide a valid password.</div>
+    </div>
+
+    <div class="col-12">
+        <button class="btn btn-primary" type="submit">Add New OBS Client</button>
+    </div>
+</form>
+{% endblock %}

@@ -1,13 +1,10 @@
-from time import tzname
-from .models import DB, User
+from ..models import DB, User
 from logging import getLogger
 from password_lib.utils import PasswordUtil
-from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, logout_user, current_user
 from flask import (
     Blueprint,
-    Response,
     render_template,
     request,
     redirect,
@@ -26,15 +23,15 @@ PSUT.configure_strength(
     requires_digits=True,
 )
 
-auth = Blueprint("auth", __name__)
+view_auth = Blueprint("view_auth", __name__)
 
 
-@auth.route("/login", methods=["GET"])
+@view_auth.route("/login", methods=["GET"])
 def get_login():
     return render_template("login.html", user=current_user)
 
 
-@auth.route("/login", methods=["POST"])
+@view_auth.route("/login", methods=["POST"])
 def post_login():
     d = request.form
     username = d.get("username")
@@ -45,25 +42,25 @@ def post_login():
     if account is not None and check_password_hash(account.password, password):
         flash("Login successful!", category="success")
         login_user(account, remember=True)
-        return redirect(url_for("views.root"))
+        return redirect(url_for("view_home.get_root"))
     else:
         flash("Invalid username or password!", category="danger")
-        return redirect(url_for("auth.get_login"))
+        return redirect(url_for("view_auth.get_login"))
 
 
-@auth.route("/logout")
+@view_auth.route("/logout")
 @login_required
-def logout():
+def get_logout():
     logout_user()
-    return redirect(url_for('auth.logout'))
+    return redirect(url_for('view_auth.logout'))
 
 
-@auth.route("/signup", methods=["GET"])
+@view_auth.route("/signup", methods=["GET"])
 def get_signup():
     return render_template("signup.html", user=current_user)
 
 
-@auth.route("/signup", methods=["POST"])
+@view_auth.route("/signup", methods=["POST"])
 def post_signup():
     d = request.form
     first_name = d.get('first_name')
@@ -76,13 +73,13 @@ def post_signup():
 
     if password != password_confirm:
         flash("Passwords do not match!", category="danger")
-        return redirect(url_for("auth.get_signup"))
+        return redirect(url_for("view_auth.get_signup"))
     elif username_exists:
         flash("Username already taken!", category="danger")
-        return redirect(url_for("auth.get_signup"))
+        return redirect(url_for("view_auth.get_signup"))
     elif not PSUT.is_secure(password):
         flash("Password does not meet the minimim requirements!", category="danger")
-        return redirect(url_for("auth.get_signup"))
+        return redirect(url_for("view_auth.get_signup"))
 
     hash_password = generate_password_hash(password=password)
     new_user = User(name=username, password=hash_password, first_name=first_name, last_name=last_name)
@@ -90,4 +87,4 @@ def post_signup():
     DB.session.commit()
     flash("Account has been created!", category="success")
     login_user(new_user, remember=True)
-    return redirect(url_for("views.root"))
+    return redirect(url_for("view_home.get_root"))
