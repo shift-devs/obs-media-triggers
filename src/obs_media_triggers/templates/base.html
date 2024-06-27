@@ -18,15 +18,15 @@
 
     <script>
         window.addEventListener('load', function () {
-          var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
-          var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-            var e = new bootstrap.Popover(popoverTriggerEl);
-            e.enable();
-            return e;
-          });
-          console.log("Found " + popoverList.length + " popover elements on this page!");
+            var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+            var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                var e = new bootstrap.Popover(popoverTriggerEl);
+                e.enable();
+                return e;
+            });
+            console.log("Found " + popoverList.length + " popover elements on this page!");
         })
-      </script>
+    </script>
 </head>
 
 <body>
@@ -46,8 +46,24 @@
                     </li>
                     <li><a id="obs-clients" href="{{ url_for('view_obs.get_root') }}" class="nav-item nav-link">OBS
                             Clients</a></li>
-                    <li><a id="twitch-login" href="{{ url_for('view_twitch.get_root') }}"
-                            class="nav-item nav-link">Twitch Login</a></li>
+                    <li>
+                        {%if twitch_manager.is_connected()%}
+                        <div class="btn btn-primary" style="background-color: blueviolet; display: block;">
+                            <i class="fa-brands fa-twitch"></i>
+                            <img width="auto" height="1em" src="{{ arun(twitch_manager.user_pfp) }}"
+                                alt="Logged in as {{ arun(twitch_manager.user_name) }}">
+                            <b>{{arun(twitch_manager.user_name)}}</b>
+                        </div>
+                        {%else%}
+                        <form method="GET" action="{{url_for('view_twitch.get_root')}}">
+                            <button class="btn btn-primary"
+                                style="background-color: blueviolet; display: block;">
+                                <i class="fa-brands fa-twitch"></i>
+                                Sign In
+                            </button>
+                        </form>
+                        {%endif%}
+                    </li>
                     {% else %}
                     <li><a id="login" href="{{ url_for('view_auth.get_login') }}" class="nav-item nav-link">Login</a>
                     </li>

@@ -1,5 +1,5 @@
 from argparse import ArgumentParser, Namespace
-from . import __dist_name__, __description__, __version__
+from . import __dist_name__, __description__, __version__, __app_host__, __app_port__
 from .dashboard import Dashboard
 from logging import getLogger, basicConfig, ERROR, INFO, NOTSET
 
@@ -42,7 +42,7 @@ def parse_args() -> Namespace:
         dest="dashboard_host",
         metavar="Dashboard Host",
         type=str,
-        default="localhost",
+        default=__app_host__,
         help="Host for the dashboard web application. (Default: localhost)",
     )
     parser.add_argument(
@@ -51,7 +51,7 @@ def parse_args() -> Namespace:
         dest="dashboard_port",
         metavar="Dashboard Port",
         type=int,
-        default=7064,
+        default=__app_port__,
         help="Port for the dashboard web application. (Default: 7064)",
     )
     return parser.parse_args()

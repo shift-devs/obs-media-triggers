@@ -4,6 +4,7 @@ from logging import getLogger
 from obsws_python import ReqClient
 from obsws_python.error import OBSSDKError
 
+
 LOG = getLogger(__name__)
 
 
@@ -67,6 +68,3 @@ class OBSClientsManager:
             except OBSSDKError as e:
                 raise RuntimeError(e)
         raise RuntimeError("The attached client was not found in the manager!")
-
-
-OBS_MANAGER = OBSClientsManager()
