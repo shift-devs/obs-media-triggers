@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 
-
 view_home = Blueprint("view_home", __name__)
 
 

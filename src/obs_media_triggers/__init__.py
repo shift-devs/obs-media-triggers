@@ -6,6 +6,9 @@ __author__ = "Ivo Robotnic"
 __copyright__ = __author__
 __license__ = "MIT"
 
+__app_host__ = 'localhost'
+__app_port__ = 7064
+
 if sys.version_info[:2] >= (3, 8):
     from importlib.metadata import PackageNotFoundError, version
 else:
