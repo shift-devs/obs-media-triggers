@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Users{% endblock %}
+
+
+
+{% block content %}
+<h1 class="pb-3">Users</h1>
+
+{% with users = get_all_users() %}
+<table class="table text-break">
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Email</th>
+      <th scope="col">Hashed Password</th>
+    </tr>
+  </thead>
+
+  {% if users %}
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{user.name}}</td>
+      <td>{{user.email}}</td>
+      <td class="w-75">{{user.password}}</td>
+    </tr>
+
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endwith %}
+{% endblock %}

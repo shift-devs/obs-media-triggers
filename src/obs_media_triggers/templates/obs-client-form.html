@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}OBS Client{% endblock %}
+
+{% block js %}
+<script>
+    {% include "validation.js" %}
+</script>
+{% endblock %}
+
+{% block content %}
+{% if new_form == 'true' %}
+<h1 class="pb-3">New OBS Client</h1>
+{% else %}
+<h1 class="pb-3">Update OBS Client</h1>
+{% endif %}
+
+<form method="POST" class="row g-3 needs-validation" novalidate>
+    <div class="form-floating col-md-4">
+        <input type="text" class="form-control" id="host" name="host" placeholder="OBS Host" value="{{ host }}">
+        <label for="host" class="form-label">OBS Host</label>
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-floating col-md-4">
+        <input type="number" class="form-control" id="port" name="port" placeholder="OBS Port" value="{{ port }}">
+        <label for="port" class="form-label">OBS Port</label>
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-floating col-md-4">
+        <input type="password" class="form-control" id="password" name="password" placeholder="OBS Password">
+        <label for="password">OBS Password</label>
+        <div class="invalid-feedback">Please provide a valid password.</div>
+    </div>
+
+    {% if new_form == 'false' %}
+    <input type="hidden" class="form-control invisible" id="original_host" name="original_host" value="{{ host }}">
+    <input type="hidden" class="form-control invisible" id="original_port" name="original_port" value="{{ port }}">
+    {% endif %}
+
+    <input class="invisible" type="hidden" id="new_form" name="new_form" value="{{new_form}}">
+
+    <div class="col-12">
+        <button class="btn btn-primary" type="submit">Submit</button>
+    </div>
+</form>
+{% endblock %}

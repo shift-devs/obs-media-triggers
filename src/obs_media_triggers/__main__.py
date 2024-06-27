@@ -1,23 +1,13 @@
-"""
-References:
-    - https://setuptools.pypa.io/en/latest/userguide/entry_point.html
-    - https://pip.pypa.io/en/stable/reference/pip_install
-"""
-
-import logging
-import sys
-from obs_media_triggers import __dist_name__, __description__, __version__
 from argparse import ArgumentParser, Namespace
+from . import __dist_name__, __description__, __version__
+from .dashboard import Dashboard
+from logging import getLogger, basicConfig, ERROR, INFO, NOTSET
 
-LOG = logging.getLogger(__name__)
+LOG = getLogger(__name__)
 
 
 def parse_args() -> Namespace:
     """Parse command line parameters
-
-    Args:
-      args (list[str]): command line parameters as list of strings
-          (for example  ``["--help"]``).
 
     Returns:
       :obj:`argparse.Namespace`: command line parameters namespace
@@ -32,38 +22,49 @@ def parse_args() -> Namespace:
         "-v",
         "--verbose",
         dest="log_level",
-        help="set log_level to INFO",
+        metavar="Log Level",
         action="store_const",
-        const=logging.INFO,
+        const=INFO,
+        help="Set log level to WARN.",
     )
     parser.add_argument(
         "-vv",
         "--very-verbose",
         dest="log_level",
-        help="set log_level to DEBUG",
+        metavar="Log Level",
         action="store_const",
-        const=logging.DEBUG,
+        const=NOTSET,
+        help="Set log level to DEBUG.",
+    )
+    parser.add_argument(
+        "-H",
+        "--host",
+        dest="dashboard_host",
+        metavar="Dashboard Host",
+        type=str,
+        default="localhost",
+        help="Host for the dashboard web application. (Default: localhost)",
+    )
+    parser.add_argument(
+        "-P",
+        "--port",
+        dest="dashboard_port",
+        metavar="Dashboard Port",
+        type=int,
+        default=7064,
+        help="Port for the dashboard web application. (Default: 7064)",
     )
     return parser.parse_args()
 
 
-def setup_logging(log_level):
-    """Setup basic logging
-
-    Args:
-      log_level (int): minimum log_level for emitting messages
-    """
-    logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
-    logging.basicConfig(
-        level=log_level,
-        stream=sys.stdout,
-        format=logformat,
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-
 def main():
     args = parse_args()
+    log_level = ERROR if (args.log_level is None) else args.log_level
+    debug = log_level == NOTSET
+    basicConfig(level=log_level)
+
+    app = Dashboard(args.dashboard_host, args.dashboard_port, debug=debug)
+    app.run()
 
 
 if __name__ == "__main__":
