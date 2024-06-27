@@ -26,33 +26,53 @@
       <td class="w-75" style="display: flex;">
         {% if obs_manager.is_connected(oc.host, oc.port) %}
         <form action="{{ url_for('view_obs.get_stream') }}" method="GET" novalidate>
-          <button type="submit"><i class="fa-solid fa-camera fa-2xl m-3" style="color: #B197FC;"></i></button>
+          <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="View Stream"
+            data-bs-trigger="hover">
+            <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-camera fa-1xl"
+                style="color: #B197FC;"></i></button>
+          </span>
           <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
           <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
         </form>
 
         <form action="{{ url_for('view_obs.post_disconnect') }}" method="POST" novalidate>
-          <button type="submit"><i class="fa-solid fa-pause m-3" style="color: #FFD43B;"></i></button>
+          <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Disconnect"
+            data-bs-trigger="hover">
+            <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-pause"
+                style="color: #FFD43B;"></i></button>
+          </span>
           <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
           <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
         </form>
         {% else %}
         <form action="{{ url_for('view_obs.post_connect') }}" method="POST" novalidate>
-          <button type="submit"><i class="fa-solid fa-play m-3" style="color: #00d700;"></i></button>
+          <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Connect" data-bs-trigger="hover">
+            <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-play"
+                style="color: #00d700;"></i></button>
+          </span>
           <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
           <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
         </form>
         {% endif %}
 
         <form action="{{ url_for('view_obs.get_edit') }}" method="GET" novalidate>
-          <button type="submit" {% if obs_manager.is_connected(oc.host, oc.port) %}disabled{% endif %}><i
-              class="fa-solid fa-pen-to-square m-3" style="color: #37aaff;"></i></button>
+          <span data-bs-toggle="popover" data-bs-placement="bottom" {%if obs_manager.is_connected(oc.host,
+            oc.port)%}data-bs-content="Cannot edit while connected" {%else%}data-bs-content="Edit" {%endif%}
+            data-bs-trigger="hover">
+            <button class="btn btn-secondary" type="submit" {%if obs_manager.is_connected(oc.host,
+              oc.port)%}disabled{%endif%}><i class="fa-solid fa-pen-to-square" style="color: #37aaff;"></i></button>
+          </span>
           <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
           <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
         </form>
 
         <form action="{{ url_for('view_obs.post_remove') }}" method="POST" novalidate>
-          <button type="submit"><i class="fa-solid fa-trash m-3" style="color: #ff0000;"></i></button>
+          <span data-bs-toggle="popover" data-bs-placement="bottom" {%if obs_manager.is_connected(oc.host,
+            oc.port)%}data-bs-content="Cannot delete while connected" {%else%}data-bs-content="Delete" {%endif%}
+            data-bs-trigger="hover">
+            <button class="btn btn-secondary" type="submit" {%if obs_manager.is_connected(oc.host,
+              oc.port)%}disabled{%endif%}><i class="fa-solid fa-trash" style="color: #ff0000;"></i></button>
+          </span>
           <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
           <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
         </form>

@@ -125,7 +125,7 @@ def post_connect():
     LOG.debug(f"Got request to connect to {url} with password: {obs_client.password}")
     try:
         OBS_MANAGER.connect(obs_client.host, obs_client.port, obs_client.password)
-    except (RuntimeError, ConnectionRefusedError, WebSocketAddressException) as e:
+    except (RuntimeError, ConnectionRefusedError, WebSocketAddressException, TimeoutError) as e:
         flash(f'Failed to connect to {url}: {e}', category='danger')
         return redirect(url_for("view_obs.get_root"))
     flash(f"Succesfully connected to {url}", category="success")
