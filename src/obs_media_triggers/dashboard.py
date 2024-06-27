@@ -1,5 +1,6 @@
 from __future__ import annotations
 import random, string
+from asyncio import run
 from flask import Flask
 from logging import getLogger
 from flask_login import LoginManager
@@ -62,7 +63,8 @@ class Dashboard(Flask):
         def load_user(username: str):
             return User.query.filter_by(name=username).one_or_none()
 
-        # Map callable functions to Jinja environment
+        # Map callable vars and functions to Jinja environment
+        self.jinja_env.globals.update(arun=run)
         self.jinja_env.globals.update(password_strength_reqs=PSUT)
         self.jinja_env.globals.update(get_all_users=self.get_all_users)
         self.jinja_env.globals.update(get_all_obs_clients=self.get_all_obs_clients)

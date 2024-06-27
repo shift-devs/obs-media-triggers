@@ -1,3 +1,4 @@
+from asyncio import run
 from ..models import User
 from logging import getLogger
 from password_lib.utils import PasswordUtil
@@ -54,6 +55,7 @@ def post_login():
 @view_auth.route("/logout", methods=["GET"])
 @login_required
 def get_logout():
+    run(current_app.twitch_manager.logout())
     logout_user()
     return redirect(url_for("view_home.get_root"))
 

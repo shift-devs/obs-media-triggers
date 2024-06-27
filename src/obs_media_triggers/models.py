@@ -1,17 +1,10 @@
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
+from sqlalchemy import Column, Integer, String, ForeignKey
 
 MAX_VARCHAR_LEN = 64
 
 DB = SQLAlchemy()
-
-class TwitchOAuthClient(DB.Model):
-    username = Column(Integer, ForeignKey("user.name"), primary_key=True)
-    access_token = Column(String(256), unique=True)
-    refresh_token = Column(String(256), unique=True)
-    expiration = Column(DateTime(timezone=True), default=func.now())
-
 
 class OBSWebSocketClient(DB.Model):
     username = Column(Integer, ForeignKey("user.name"))
