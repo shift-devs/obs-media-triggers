@@ -5,39 +5,51 @@
 {% block content %}
 <h1 class="pb-3 mb-5">OBS Events</h1>
 
-{% with scenes = obs_client.get_scene_list() %}
-<form>
-  <label for="active_scene">Active Scene</label>
-  <select class="form-select form-select-lg col-12" type="text" name="Select Active Scene" id="active_scene">
-    <option value="select_active_scene">Select Active Scene</option>
-    {% for s in scenes['scenes'] %}
+<form method="POST" action="{{request.base_url}}/scene">
+  <select class="form-select form-select-lg col-12" type="text" id="active_scene" name="active_scene"
+    value="{{obs_client.active_scene_name}}">
+    <option value="default">Select Active Scene</option>
+    {% for s in obs_client.get_scene_list()['scenes'] %}
     <option value="{{s['sceneName']}}">{{s['sceneName']}}</option>
     {% endfor %}
   </select>
+  <label for="active_scene">Active Scene</label>
+  <div class="col-12">
+    <button class="btn btn-primary" type="submit">Submit</button>
+  </div>
 </form>
 
-{% with events = obs_manager.get_all_events() %}
 <table class="table text-break">
   <thead>
     <tr>
-      <th scope="col">Event Type</th>
-      <th scope="col">Event Name</th>
+      <th scope="col">ID</th>
+      <th scope="col">OBS ID</th>
+      <th scope="col">Type</th>
+      <th scope="col">Quantity</th>
       <th scope="col">Allow Anonymous</th>
+      <th scope="col">Item Template</th>
+      <th scope="col">Actions</th>
     </tr>
   </thead>
+
   <tbody>
-    {% for e in events %}
-    <tr>{{e.type}}</tr>
-    <tr>{{e.name}}</tr>
-    <tr>{{e.allow_anon}}</tr>
-    {% endfor %}
+    <tr>
+      {% for e in obs_client.get_all_events() %}
+      <td scope="col">{{e.id}}</td>
+      <td scope="col">{{e.obs_id}}</td>
+      <td scope="col">{{e.type}}</td>
+      <td scope="col">{{e.quantity}}</td>
+      <td scope="col">{{e.allow_anon}}</td>
+      <td scope="col">{{e.src_template}}</td>
+      <td scope="col">
+        <a href="./">Start Listening</a>
+      </td>
+      {% endfor %}
+    </tr>
   </tbody>
 </table>
-{% endwith %}
 
 <div class="col-12 mt-4">
-  <a href="{{ url_for('view_obs.get_events_add') }}" class="btn btn-success">+ New Event</a>
+  <a href="{{request.base_url}}/add" class="btn btn-success">+ New Event</a>
 </div>
-
-{% endwith %}
 {% endblock %}

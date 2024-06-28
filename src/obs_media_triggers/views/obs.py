@@ -2,7 +2,7 @@ from logging import getLogger
 
 from websocket import WebSocketAddressException
 from flask_login import login_required, current_user
-from ..controllers import OBSClientsManager, UserManager
+from ..controllers import OBSClientsManager, TwitchClientManager, UserManager
 from flask import (
     flash,
     request,
@@ -153,25 +153,57 @@ def get_disconnect(id: int):
 @view_obs.route("/events/<int:id>", methods=["GET"])
 @login_required
 def get_events(id: int):
-    return render_template(
-        "obs-events.html",
-        new_form="false",
-    )
+    try:
+        obs: OBSClientsManager = current_app.obs_manager
+        twitch: TwitchClientManager = current_app.twitch_manager
+        if not twitch.is_logged_in():
+            flash("Must log into Twitch before editing events!", category="danger")
+            return redirect(url_for("view_obs.get_root"))
+
+        client = obs[id]
+        return render_template("obs-events.html", obs_client=client)
+    except RuntimeError as e:
+        msg = f"OBS Client #{id} failed to fetch with reason: {e}"
+        LOG.error(msg)
+        flash(e, category="danger")
+        return redirect(url_for("view_obs.get_root"))
 
 
-@view_obs.route("/events/add", methods=["GET"])
+@view_obs.route("/events/<int:id>/scene", methods=["POST"])
 @login_required
-def get_events_add():
-    return render_template(
-        "obs-events-form.html",
-        new_form="false",
-    )
+def post_active_scene(id: int):
+    form = request.form
+    form_active_scene = form.get("active_scene")
+    obs: OBSClientsManager = current_app.obs_manager
+    client = obs[id]
+    client.active_scene = form_active_scene
+    LOG.debug(f'Setting active scene to {form_active_scene} for {client}')
+
+    return redirect(url_for("view_obs.get_events", id=id))
 
 
-@view_obs.route("/events/add", methods=["POST"])
+@view_obs.route("/events/<int:id>/add", methods=["GET"])
 @login_required
-def post_events_add():
-    d = request.args
-    host = d.get("host")
-    port = d.get("port")
+def get_events_add(id: int):
+    obs: OBSClientsManager = current_app.obs_manager
+    client = obs[id]
+    return render_template("obs-events-form.html", obs_client=client)
+
+
+@view_obs.route("/events/<int:id>/add", methods=["POST"])
+@login_required
+def post_events_add(id: int):
+    obs: OBSClientsManager = current_app.obs_manager
+    client = obs[id]
+    form = request.form
+
+    form_type = form.get("event_type")
+    form_qt = form.get("event_qt")
+    form_allow_anon = form.get("event_allow_anon") is not None
+    fomr_src_template = form.get('event_src_template')
+
+    client.add_event(id, form_type, form_qt, form_allow_anon, src_template=fomr_src_template)
+
+    LOG.debug(f"Got new event type")
+
     return "Not implemented"

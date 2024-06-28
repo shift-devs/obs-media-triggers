@@ -47,12 +47,12 @@
                     <li><a id="obs-clients" href="{{ url_for('view_obs.get_root') }}" class="nav-item nav-link">OBS
                             Clients</a></li>
                     <li>
-                        {%if twitch_manager.is_connected()%}
+                        {%if twitch_manager.is_logged_in()%}
                         <div class="btn btn-primary" style="background-color: blueviolet; display: block;">
                             <i class="fa-brands fa-twitch"></i>
-                            <img width="auto" height="1em" src="{{ arun(twitch_manager.user_pfp) }}"
-                                alt="Logged in as {{ arun(twitch_manager.user_name) }}">
-                            <b>{{arun(twitch_manager.user_name)}}</b>
+                            <img width="auto" height="1em" src="{{ twitch_manager.pfp }}"
+                                alt="Logged in as {{ twitch_manager.username }}">
+                            <b>{{twitch_manager.username}}</b>
                         </div>
                         {%else%}
                         <form method="GET" action="{{url_for('view_twitch.get_root')}}">

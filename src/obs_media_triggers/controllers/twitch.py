@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from asyncio import run, iscoroutinefunction
 from logging import getLogger
-from dataclasses import dataclass
+from inspect import getmembers
 from twitchAPI.helper import first
 from twitchAPI.twitch import Twitch
 from twitchAPI.type import AuthScope
@@ -28,14 +29,9 @@ class TwitchClient(Twitch):
         self.app_secret = app_secret
 
 
-@dataclass
-class TwitchEvent:
-    type: str = None
-    name: str = None
-    allow_anon: bool = False
-
-
 class TwitchClientManager:
+    __CACHE = {}
+
     api: TwitchClient
     auth: UserAuthenticator
     app_url: str
@@ -50,7 +46,7 @@ class TwitchClientManager:
         self.api = None
         self.auth = None
         self.app_url = f"{scheme}://{host}:{port}/twitch/login"
-        self.events = None
+        self.events = EventSubWebsocket(self.api)
 
     def start_auth(self: TwitchClientManager):
         self.api = TwitchClient(__app_id__, __app_secret__)
@@ -71,37 +67,38 @@ class TwitchClientManager:
             validate=True,
         )
         await self.api.authenticate_app(TWITCH_API_SCOPES)
-        return self.is_connected()
+        return self.is_logged_in()
 
     async def logout(self: TwitchClientManager) -> None:
         self.stop_es()
         self.auth = None
         self.api = None
+        await self.events.unsubscribe_all()
+        await self.events.stop()
+        self.events = None
 
-    def is_connected(self: TwitchClientManager) -> bool:
+    def is_logged_in(self: TwitchClientManager) -> bool:
         return (self.auth is not None) and (self.auth.state is not None)
 
-    def start_es(self: TwitchClientManager) -> None:
-        self.events = EventSubWebsocket(self.api)
-        if self.events is not None:
-            self.events.start()
+    def get_all_event_types(self: TwitchClientManager) -> list[str]:
+        function_names = list(filter(lambda x: x[0].startswith('listen_'), getmembers(self.events)))
+        LOG.debug(f"Found {len(function_names)} event types!")
+        return list(map(lambda x: x[0].replace('listen_', ''), function_names))
 
-    def stop_es(self: TwitchClientManager) -> None:
-        if self.events is not None:
-            self.events.unsubscribe_all()
-            self.events.stop()
-        self.events = None
-    
-    def get_all_event_types():
-        raw_func  = EventSubWebsocket.__dict__
-        return list(raw_func)
+    @staticmethod
+    def cached(key: str, subroutine: callable):
+        if TwitchClientManager.__CACHE.get(key) is None:
+            TwitchClientManager.__CACHE[key] = run(subroutine)
+        return TwitchClientManager.__CACHE[key]
 
     @property
-    async def user_name(self: TwitchClientManager) -> str:
-        user: TwitchUser = await first(self.api.get_users())
-        return user.display_name
+    def user(self: TwitchClientManager) -> str:
+        return TwitchClientManager.cached("user", first(self.api.get_users()))
 
     @property
-    async def user_pfp(self: TwitchClientManager) -> str:
-        user: TwitchUser = await first(self.api.get_users())
-        return user.profile_image_url
+    def username(self: TwitchClientManager) -> str:
+        return self.user.display_name
+
+    @property
+    def pfp(self: TwitchClientManager) -> str:
+        return self.user.profile_image_url

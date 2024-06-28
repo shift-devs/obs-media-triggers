@@ -32,7 +32,7 @@ def get_login():
 
     LOG.info(f"Got {state} request with user token: {user_token}")
     if run(twitch.login(user_token)):
-        flash(f"Logged into Twitch as {run(twitch.user_name)}", category='success')
+        flash(f"Logged into Twitch as {twitch.username}", category='success')
     else:
         flash("Failed to log into twitch!", category="danger")
     return redirect(url_for("view_home.get_root"))

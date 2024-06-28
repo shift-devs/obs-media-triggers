@@ -1,7 +1,7 @@
 from __future__ import annotations
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, String, ForeignKey, Sequence
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Sequence
 
 MAX_VARCHAR_LEN = 64
 
@@ -22,6 +22,10 @@ class OBSWSClientModel(DB.Model):
 class EventModel(DB.Model):
     id = Column(Integer, Sequence('event_id', start=0, increment=1), primary_key=True)
     obs_id = Column(Integer, ForeignKey('obsws_client_model.id'))
+    type = Column(String(MAX_VARCHAR_LEN))
+    quantity = Column(Integer)
+    allow_anon = Column(Boolean)
+    src_template = Column(String(MAX_VARCHAR_LEN))
 
 
 class UserModel(DB.Model, UserMixin):
