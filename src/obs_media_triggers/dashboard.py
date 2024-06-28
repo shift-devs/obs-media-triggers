@@ -1,13 +1,14 @@
 from __future__ import annotations
+
 import random, string
 from asyncio import run
 from flask import Flask
 from logging import getLogger
-from flask_login import LoginManager
+from .models import DB, UserModel
+from flask_login import current_user
 from flask_sqlalchemy import SQLAlchemy
-from .models import DB, User, OBSWebSocketClient
-from .controllers import OBSClientsManager, TwitchClientManager
-from .views import view_home, view_auth, view_obs, view_twitch, view_user, PSUT
+from .views import view_home, view_auth, view_obs, view_twitch, view_users
+from .controllers import OBSClientsManager, TwitchClientManager, UserManager
 
 LOG = getLogger(__name__)
 DEFAULT_DB_NAME = "obs-media-triggers.db"
@@ -22,9 +23,9 @@ class Dashboard(Flask):
     host: str
     port: int
     db: SQLAlchemy
-    login_manager: LoginManager
     obs_manager: OBSClientsManager
     twitch_manager: TwitchClientManager
+    user_manager: UserManager
 
     def __init__(
         self: Dashboard,
@@ -49,43 +50,31 @@ class Dashboard(Flask):
         self.register_blueprint(view_auth, url_prefix="/auth/")
         self.register_blueprint(view_obs, url_prefix="/obs/")
         self.register_blueprint(view_twitch, url_prefix="/twitch/")
-        self.register_blueprint(view_user, url_prefix="/user/")
+        self.register_blueprint(view_users, url_prefix="/users/")
 
         # Setup Controlelrs
-        self.obs_manager = OBSClientsManager()
+        self.obs_manager = OBSClientsManager(self)
         self.twitch_manager = TwitchClientManager()
-
-        # Setup login manager
-        self.login_manager = LoginManager(self)
-        self.login_manager.login_view = "view_auth.get_login"
-
-        @self.login_manager.user_loader
-        def load_user(username: str):
-            return User.query.filter_by(name=username).one_or_none()
+        self.user_manager = UserManager(self)
 
         # Map callable vars and functions to Jinja environment
         self.jinja_env.globals.update(arun=run)
-        self.jinja_env.globals.update(password_strength_reqs=PSUT)
+        self.jinja_env.globals.update(user=current_user)
         self.jinja_env.globals.update(get_all_users=self.get_all_users)
-        self.jinja_env.globals.update(get_all_obs_clients=self.get_all_obs_clients)
 
         # Map controllers to Jinja environment
         self.jinja_env.globals.update(obs_manager=self.obs_manager)
         self.jinja_env.globals.update(twitch_manager=self.twitch_manager)
+        self.jinja_env.globals.update(user_manager=self.user_manager)
 
         # Initialize the database schemas and link to flask
         with self.app_context():
             self.db.init_app(self)
             self.db.create_all()
 
-    def get_all_users(self: Dashboard) -> list[User]:
-        res = self.db.session.query(User).all()
-        return self.db.session.query(User).all()
-
-    def get_all_obs_clients(self: Dashboard) -> list[User]:
-        res = self.db.session.query(OBSWebSocketClient).all()
-        LOG.debug(f"Found {len(res)} OBS clients in the db!")
-        return res
+    def get_all_users(self: Dashboard) -> list[UserModel]:
+        res = self.db.session.query(UserModel).all()
+        return self.db.session.query(UserModel).all()
 
     def run(self: Dashboard) -> any:
         return super().run(host=self.host, port=self.port, debug=self.debug)

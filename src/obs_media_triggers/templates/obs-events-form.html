@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}OBS Events{% endblock %}
+
+{% block js %}
+<script>
+    {% include "validation.js" %}
+</script>
+{% endblock %}
+
+{% block content %}
+{% if new_form == 'true' %}
+<h1 class="pb-3">New Event</h1>
+{% else %}
+<h1 class="pb-3">Update Event</h1>
+{% endif %}
+
+<form method="POST" class="row g-3 needs-validation" novalidate>
+    <div class="form-floating col-md-4">
+        <label for="event_type">Event Type</label>
+        <select class="form-select form-select-lg col-12" type="text" name="Event Type" id="event_type">
+            <option value="select_event_type">Event Type</option>
+
+            {% with types = twitch_manger.get_all_event_types() %}
+            {% for t in types %}
+            <option value="{{t}}">t</option>
+            {% endfor %}
+            {% endwith %}
+        </select>
+
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-floating col-md-4">
+        <input type="number" class="form-control" id="event_qt" name="event_qt" placeholder="Quantity">
+        <label for="port" class="form-label">Event Quantity</label>
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="event_allow_anon">
+        <label class="form-check-label" for="event_allow_anon">Allow From Anonymous</label>
+    </div>
+
+    {% if new_form == 'false' %}
+    <input type="hidden" class="form-control invisible" id="original_host" name="original_host" value="{{ host }}">
+    <input type="hidden" class="form-control invisible" id="original_port" name="original_port" value="{{ port }}">
+    {% endif %}
+
+    <input class="invisible" type="hidden" id="new_form" name="new_form" value="{{new_form}}">
+
+    <div class="col-12">
+        <button class="btn btn-primary" type="submit">Submit</button>
+    </div>
+</form>
+{% endblock %}

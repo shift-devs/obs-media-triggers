@@ -1,9 +1,7 @@
 from asyncio import run
-from ..models import User
 from logging import getLogger
-from password_lib.utils import PasswordUtil
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import login_user, login_required, logout_user, current_user
+from ..controllers import UserManager
+from flask_login import login_required
 from flask import (
     flash,
     request,
@@ -15,39 +13,31 @@ from flask import (
 )
 
 LOG = getLogger(__name__)
-PSUT = PasswordUtil()
-PSUT.configure_strength(
-    min_length=9,
-    max_length=128,
-    requires_lowercase=True,
-    requires_uppercase=True,
-    requires_special_chars=True,
-    requires_digits=True,
-)
+
 
 view_auth = Blueprint("view_auth", __name__)
 
 
 @view_auth.route("/login", methods=["GET"])
 def get_login():
-    return render_template("login.html", user=current_user)
+    return render_template("login.html")
 
 
 @view_auth.route("/login", methods=["POST"])
 def post_login():
-    d = request.form
-    username = d.get("username")
-    password = d.get("password")
+    users: UserManager = current_app.user_manager
 
-    account: User = (
-        current_app.db.session.query(User).where(User.name == username).one_or_none()
-    )
-    LOG.debug(f"Matching {username} to db account: {account}")
-    if account is not None and check_password_hash(account.password, password):
+    form = request.form
+    form_username = form.get("username")
+    form_password = form.get("password")
+    form_remeber_me = form.get("remember_me") is not None
+
+    try:
+        users.login(form_username, form_password, remeber_user=form_remeber_me)
         flash("Login successful!", category="success")
-        login_user(account, remember=True)
         return redirect(url_for("view_home.get_root"))
-    else:
+    except RuntimeError as e:
+        LOG.error(f"Login attempt for {form_username} failed with reason: {e}")
         flash("Invalid username or password!", category="danger")
         return redirect(url_for("view_auth.get_login"))
 
@@ -56,47 +46,33 @@ def post_login():
 @login_required
 def get_logout():
     run(current_app.twitch_manager.logout())
-    logout_user()
+    current_app.user_manager.logout()
     return redirect(url_for("view_home.get_root"))
 
 
 @view_auth.route("/signup", methods=["GET"])
 def get_signup():
-    return render_template("signup.html", user=current_user)
+    users: UserManager = current_app.user_manager
+    return render_template("signup.html", policy=users.password_policy)
 
 
 @view_auth.route("/signup", methods=["POST"])
 def post_signup():
-    d = request.form
-    first_name = d.get("first_name")
-    last_name = d.get("last_name")
-    username = d.get("username")
-    password = d.get("password")
-    password_confirm = d.get("password_confirm")
-    LOG.info(f"Got sign-up request for {first_name} {last_name} <{username}>")
-    username_exists = (
-        current_app.db.session.query(User).filter_by(name=username).first() is not None
-    )
+    users: UserManager = current_app.user_manager
 
-    if password != password_confirm:
-        flash("Passwords do not match!", category="danger")
-        return redirect(url_for("view_auth.get_signup"))
-    elif username_exists:
-        flash("Username already taken!", category="danger")
-        return redirect(url_for("view_auth.get_signup"))
-    elif not PSUT.is_secure(password):
-        flash("Password does not meet the minimim requirements!", category="danger")
-        return redirect(url_for("view_auth.get_signup"))
+    form = request.form
+    form_username = form.get("username")
+    form_password = form.get("password")
+    form_password_confirm = form.get("password_confirm")
 
-    hash_password = generate_password_hash(password=password)
-    new_user = User(
-        name=username,
-        password=hash_password,
-        first_name=first_name,
-        last_name=last_name,
-    )
-    current_app.db.session.add(new_user)
-    current_app.db.session.commit()
-    flash("Account has been created!", category="success")
-    login_user(new_user, remember=True)
-    return redirect(url_for("view_home.get_root"))
+    try:
+        users.signup(form_username, form_password, form_password_confirm)
+        LOG.info(f"Account {form_username} has been created!")
+        flash("Account has been created!", category="success")
+        return redirect(url_for("view_home.get_root"))
+    except RuntimeError as e:
+        LOG.error(
+            f"Signup for requested username {form_username} failed with reason: {e}"
+        )
+        flash(f"Sign-up failed: {e}", category="danger")
+        return redirect(url_for("view_auth.get_signup"))

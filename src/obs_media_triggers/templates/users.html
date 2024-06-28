@@ -11,8 +11,7 @@
 <table class="table text-break">
   <thead>
     <tr>
-      <th scope="col">Name</th>
-      <th scope="col">Email</th>
+      <th scope="col">Usename</th>
       <th scope="col">Hashed Password</th>
     </tr>
   </thead>
@@ -21,9 +20,8 @@
   <tbody>
     {% for user in users %}
     <tr>
-      <td>{{user.name}}</td>
-      <td>{{user.email}}</td>
-      <td class="w-75">{{user.password}}</td>
+      <td scope="col">{{user.name}}</td>
+      <td scope="col">{{'*' * user.password.__len__()}}</td>
     </tr>
 
     {% endfor %}

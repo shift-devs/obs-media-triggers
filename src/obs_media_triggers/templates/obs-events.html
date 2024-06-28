@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}OBS Events{% endblock %}
+
+{% block content %}
+<h1 class="pb-3 mb-5">OBS Events</h1>
+
+{% with scenes = obs_client.get_scene_list() %}
+<form>
+  <label for="active_scene">Active Scene</label>
+  <select class="form-select form-select-lg col-12" type="text" name="Select Active Scene" id="active_scene">
+    <option value="select_active_scene">Select Active Scene</option>
+    {% for s in scenes['scenes'] %}
+    <option value="{{s['sceneName']}}">{{s['sceneName']}}</option>
+    {% endfor %}
+  </select>
+</form>
+
+{% with events = obs_manager.get_all_events() %}
+<table class="table text-break">
+  <thead>
+    <tr>
+      <th scope="col">Event Type</th>
+      <th scope="col">Event Name</th>
+      <th scope="col">Allow Anonymous</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for e in events %}
+    <tr>{{e.type}}</tr>
+    <tr>{{e.name}}</tr>
+    <tr>{{e.allow_anon}}</tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endwith %}
+
+<div class="col-12 mt-4">
+  <a href="{{ url_for('view_obs.get_events_add') }}" class="btn btn-success">+ New Event</a>
+</div>
+
+{% endwith %}
+{% endblock %}

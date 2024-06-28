@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from logging import getLogger
+from dataclasses import dataclass
 from twitchAPI.helper import first
 from twitchAPI.twitch import Twitch
 from twitchAPI.type import AuthScope
 from twitchAPI.object.api import TwitchUser
 from twitchAPI.oauth import UserAuthenticator
+from twitchAPI.eventsub.websocket import EventSubWebsocket
 from .. import __app_host__, __app_port__, __app_id__, __app_secret__
 
 LOG = getLogger(__name__)
@@ -26,10 +28,18 @@ class TwitchClient(Twitch):
         self.app_secret = app_secret
 
 
+@dataclass
+class TwitchEvent:
+    type: str = None
+    name: str = None
+    allow_anon: bool = False
+
+
 class TwitchClientManager:
     api: TwitchClient
     auth: UserAuthenticator
     app_url: str
+    events: EventSubWebsocket
 
     def __init__(
         self: TwitchClientManager,
@@ -63,12 +73,27 @@ class TwitchClientManager:
         return self.is_connected()
 
     async def logout(self: TwitchClientManager) -> None:
+        self.stop_es()
         self.auth = None
         self.api = None
-        LOG.debug('Removed twitch connection.')
 
     def is_connected(self: TwitchClientManager) -> bool:
         return (self.auth is not None) and (self.auth.state is not None)
+
+    def start_es(self: TwitchClientManager) -> None:
+        self.events = EventSubWebsocket(self.api)
+        if self.events is not None:
+            self.events.start()
+
+    def stop_es(self: TwitchClientManager) -> None:
+        if self.events is not None:
+            self.events.unsubscribe_all()
+            self.events.stop()
+        self.events = None
+    
+    def get_all_event_types():
+        raw_func  = EventSubWebsocket.__dict__
+        return list(raw_func)
 
     @property
     async def user_name(self: TwitchClientManager) -> str:
