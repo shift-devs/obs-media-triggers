@@ -1,6 +1,8 @@
 from logging import getLogger
 
-from ..controllers.obs import OBSClientsManager
+from websocket import WebSocketAddressException
+from flask_login import login_required, current_user
+from ..controllers import OBSClientsManager, UserManager
 from flask import (
     flash,
     request,
@@ -10,8 +12,6 @@ from flask import (
     current_app,
     render_template,
 )
-from flask_login import login_required, current_user
-from websocket import WebSocketAddressException
 
 LOG = getLogger(__name__)
 
@@ -21,52 +21,56 @@ view_obs = Blueprint("view_obs", __name__)
 @view_obs.route("/", methods=["GET"])
 @login_required
 def get_root():
-    return render_template(
-        "obs.html",
-    )
+    return render_template("obs.html")
 
 
 @view_obs.route("/add", methods=["GET"])
 @login_required
 def get_add():
     return render_template(
-        "obs-client-form.html",
-        new_form="true",
-        host="localhost",
-        port="4455",
+        "obs-client-form.html", banner="New", host="localhost", port="4455"
     )
 
 
 @view_obs.route("/add", methods=["POST"])
 @login_required
 def post_add():
+    users: UserManager = current_app.user_manager
+    obs: OBSClientsManager = current_app.obs_manager
+
     d = request.form
-    username = current_user.name
+    user_id = users.get_id_by_name()
     host = d.get("host")
     port = d.get("port")
     password = d.get("password")
-    current_app.obs_manager.add_client(username, host, port, password)
+    obs.add_client(user_id, host, port, password)
     flash(
-        f"OBS Client ws://{host}:{port} has been added for {username}!",
+        f"OBS Client ws://{host}:{port} has been added for {user_id}!",
         category="success",
     )
 
     return redirect(url_for("view_obs.get_root"))
 
 
-@view_obs.route("/edit/<id>", methods=["GET"])
+@view_obs.route("/edit/<int:id>", methods=["GET"])
 @login_required
 def get_edit(id: int):
     obs: OBSClientsManager = current_app.obs_manager
-    client = obs.get_client_by_id(id)
+    client = obs.get_db_info_by_id(id)
     if client is None:
         flash(f"Cannot edit OBS Client #{id}, client not found!", category="danger")
         return redirect(url_for("obs_view.get_root"))
     LOG.debug(f"Found client with ID #{client.id} to edit!")
-    return render_template("obs-client-form.html", obs_client=client)
+    return render_template(
+        "obs-client-form.html",
+        banner="Update",
+        host=client.host,
+        port=client.port,
+        password=client.password,
+    )
 
 
-@view_obs.route("/edit/<id>", methods=["POST"])
+@view_obs.route("/edit/<int:id>", methods=["POST"])
 @login_required
 def post_edit(id: int):
     username = current_user.name
@@ -77,7 +81,7 @@ def post_edit(id: int):
     form_password = form.get("password")
 
     obs: OBSClientsManager = current_app.obs_manager
-    client = obs.get_client_by_id(username, id)
+    client = obs.get_db_info_by_id(id)
 
     if client is None:
         flash(f"Cannot edit OBS Client #{id}, client not found!", category="danger")
@@ -85,15 +89,8 @@ def post_edit(id: int):
 
     LOG.debug(f"Got request to update Client #{client.id}")
 
-    new_values = {}
-    if form_host is not None:
-        new_values["host"] = form_host
-    if form_port is not None:
-        new_values["port"] = form_port
-    if form_password is not None:
-        new_values["password"] = form_password
+    new_values = {"host": form_host, "port": form_port, "password": form_password}
     obs.update_client(id, new_values)
-
     flash(
         f"OBS Client #{client.id} has been updated to ws://{client.host}:{client.port}!",
         category="success",
@@ -101,57 +98,61 @@ def post_edit(id: int):
     return redirect(url_for("view_obs.get_root"))
 
 
-@view_obs.route("/remove/<id>", methods=["POST"])
+@view_obs.route("/remove/<int:id>", methods=["GET"])
 @login_required
-def post_remove(id: int):
+def get_remove(id: int):
     obs: OBSClientsManager = current_app.obs_manager
-    obs.delete_client(id)
 
-    if obs.delete_client(id):
+    try:
+        obs.delete_client(id)
         flash(f"OBS Client #{id} has been removed!", category="success")
-    else:
-        flash(f"OBS Client #{id} was not found!", category="danger")
+    except RuntimeError as e:
+        msg = f"OBS Client #{id} deletion failed with reason: {e}"
+        LOG.error(msg)
+        flash(msg, category="danger")
     return redirect(url_for("view_obs.get_root"))
 
 
-@view_obs.route("/connect/<id>", methods=["POST"])
+@view_obs.route("/connect/<int:id>", methods=["GET"])
 @login_required
-def post_connect(id: int):
+def get_connect(id: int):
     obs: OBSClientsManager = current_app.obs_manager
+    LOG.debug(f"Attempting connection to OBS Client #{id}")
     try:
-        obs.connect(current_user.name, id)
-        flash("Succesfully connected!", category="success")
+        obs.connect_client(id)
+        msg = f"OBS Client #{id} succesfully connected!"
+        LOG.info(msg)
+        flash(id, category="success")
     except (
         RuntimeError,
         ConnectionRefusedError,
         WebSocketAddressException,
         TimeoutError,
     ) as e:
-        LOG.error(e)
-        flash(f"Failed to connect: {e}", category="danger")
+        msg = f"OBS Client #{id} connection faild: {e}"
+        LOG.error(msg)
+        flash(msg, category="danger")
     finally:
         return redirect(url_for("view_obs.get_root"))
 
 
-@view_obs.route("/disconnect/<id>", methods=["POST"])
+@view_obs.route("/disconnect/<int:id>", methods=["GET"])
 @login_required
-def post_disconnect(id: int):
+def get_disconnect(id: int):
     obs: OBSClientsManager = current_app.obs_manager
 
+    obs.disconnect_client(id)
     try:
-        obs.disconnect_client(id)
-        flash(f"Succesfully disconnected from Client #{id}", category="success")
+        flash(f"OBS Client #{id} succesfully disconnected!", category="success")
     except RuntimeError as e:
-        flash(f"Failed to disconnect from Client #{id}: {e}", category="danger")
+        flash(f"OBS Client #{id} disconnection failed: {e}", category="danger")
     finally:
         return redirect(url_for("view_obs.get_root"))
 
 
-@view_obs.route("/events", methods=["GET"])
+@view_obs.route("/events/<int:id>", methods=["GET"])
 @login_required
-def get_events():
-    d = request.args
-
+def get_events(id: int):
     return render_template(
         "obs-events.html",
         new_form="false",

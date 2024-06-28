@@ -50,6 +50,7 @@ class TwitchClientManager:
         self.api = None
         self.auth = None
         self.app_url = f"{scheme}://{host}:{port}/twitch/login"
+        self.events = None
 
     def start_auth(self: TwitchClientManager):
         self.api = TwitchClient(__app_id__, __app_secret__)

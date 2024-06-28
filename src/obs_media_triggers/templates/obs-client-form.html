@@ -9,11 +9,7 @@
 {% endblock %}
 
 {% block content %}
-{% if new_form == 'true' %}
-<h1 class="pb-3">New OBS Client</h1>
-{% else %}
-<h1 class="pb-3">Update OBS Client</h1>
-{% endif %}
+<h1 class="pb-3">{{banner}} OBS Client</h1>
 
 <form method="POST" class="row g-3 needs-validation" novalidate>
     <div class="form-floating col-md-4">
@@ -29,7 +25,7 @@
     </div>
 
     <div class="form-floating col-md-4">
-        <input type="password" class="form-control" id="password" name="password" placeholder="OBS Password">
+        <input type="password" class="form-control" id="password" name="password" placeholder="OBS Password" value="{{ password }}">
         <label for="password">OBS Password</label>
         <div class="invalid-feedback">Please provide a valid password.</div>
     </div>

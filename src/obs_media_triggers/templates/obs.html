@@ -18,65 +18,41 @@
   </thead>
 
   <tbody>
-    {% for c in obs_manager.get_all_user_clients(user.name) %}
+    {% for c in obs_manager.get_active_user_clients() %}
     <tr>
-      <td>{{oc.host}}</td>
-      <td>{{oc.host}}</td>
-      <td>{{oc.port}}</td>
-      <td>{{'*' * oc.password.__len__()}}</td>
+      <td>{{c.id}}</td>
+      <td>{{c.host}}</td>
+      <td>{{c.port}}</td>
+      <td>{{'*' * c.password.__len__()}}</td>
       <td class="w-75" style="display: flex;">
-        {% if obs_manager.is_connected(oc.host, oc.port) %}
-        <form action="{{ url_for('view_obs.get_events') }}" method="GET" novalidate>
-          <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="View Events"
-            data-bs-trigger="hover">
-            <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-camera fa-1xl"
-                style="color: #B197FC;"></i></button>
-          </span>
-          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
-          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
-        </form>
 
-        <form action="{{ url_for('view_obs.post_disconnect') }}" method="POST" novalidate>
-          <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Disconnect"
-            data-bs-trigger="hover">
-            <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-pause"
-                style="color: #FFD43B;"></i></button>
-          </span>
-          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
-          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
-        </form>
-        {% else %}
-        <form action="{{ url_for('view_obs.post_connect') }}" method="POST" novalidate>
-          <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Connect" data-bs-trigger="hover">
-            <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-play"
-                style="color: #00d700;"></i></button>
-          </span>
-          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
-          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
-        </form>
-        {% endif %}
+        {%if obs_manager.is_disconnected(c.id)%}
+        <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Connect" data-bs-trigger="hover">
+          <a class="btn btn-secondary" href="{{ url_for('view_obs.get_connect', id=c.id) }}" {%if
+            obs_manager.is_disconnected(c.id)%}disabled{%endif%}><i class="fa-solid fa-play"
+              style="color: #00d700;"></i></a>
+        </span>
 
-        <form action="{{ url_for('view_obs.get_edit') }}/{{ obs_ }}" method="GET" novalidate>
-          <span data-bs-toggle="popover" data-bs-placement="bottom" {%if obs_manager.is_connected(oc.host,
-            oc.port)%}data-bs-content="Cannot edit while connected" {%else%}data-bs-content="Edit" {%endif%}
-            data-bs-trigger="hover">
-            <button class="btn btn-secondary" type="submit" {%if obs_manager.is_connected(oc.host,
-              oc.port)%}disabled{%endif%}><i class="fa-solid fa-pen-to-square" style="color: #37aaff;"></i></button>
-          </span>
-          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
-          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
-        </form>
+        <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Edit" data-bs-trigger="hover">
+          <a class="btn btn-secondary" href="{{ url_for('view_obs.get_edit', id=c.id) }}"><i
+              class="fa-solid fa-pen-to-square" style="color: #37aaff;"></i></a>
+        </span>
 
-        <form action="{{ url_for('view_obs.post_remove') }}" method="POST" novalidate>
-          <span data-bs-toggle="popover" data-bs-placement="bottom" {%if obs_manager.is_connected(oc.host,
-            oc.port)%}data-bs-content="Cannot delete while connected" {%else%}data-bs-content="Delete" {%endif%}
-            data-bs-trigger="hover">
-            <button class="btn btn-secondary" type="submit" {%if obs_manager.is_connected(oc.host,
-              oc.port)%}disabled{%endif%}><i class="fa-solid fa-trash" style="color: #ff0000;"></i></button>
-          </span>
-          <input type="hidden" name="host" id="host" value="{{oc.host}}" class="invisible">
-          <input type="hidden" name="port" id="port" value="{{oc.port}}" class="invisible">
-        </form>
+        <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Delete" data-bs-trigger="hover">
+          <a class="btn btn-secondary" href="{{ url_for('view_obs.get_remove', id=c.id) }}"><i class="fa-solid fa-trash"
+              style="color: #ff0000;"></i></a>
+        </span>
+        {%else%}
+        <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="View Events" data-bs-trigger="hover">
+          <a class="btn btn-secondary" href="{{ url_for('view_obs.get_events', id=c.id) }}"><i
+              class="fa-solid fa-camera fa-1xl" style="color: #B197FC;"></i></a>
+        </span>
+
+        <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Disconnect" data-bs-trigger="hover">
+          <a class="btn btn-secondary" href="{{ url_for('view_obs.get_disconnect', id=c.id) }}"><i
+              class="fa-solid fa-pause" style="color: #FFD43B;"></i></a>
+        </span>
+        {%endif%}
       </td>
     </tr>
     {% endfor %}

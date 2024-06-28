@@ -7,7 +7,7 @@
 {% block content %}
 <h1 class="pb-3">Users</h1>
 
-{% with users = get_all_users() %}
+{% with users = user_manager.get_all_users() %}
 <table class="table text-break">
   <thead>
     <tr>

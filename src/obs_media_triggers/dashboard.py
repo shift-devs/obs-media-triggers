@@ -33,17 +33,13 @@ class Dashboard(Flask):
         port: int = 7064,
         debug: bool = False,
         db_uri: str = f"sqlite:///{DEFAULT_DB_NAME}",
-        secret_key: str = gen_secret(),
+        secret_key: str = None,
     ):
         super().__init__(__name__)
         self.debug = debug
         self.db = DB
         self.host = host
         self.port = port
-
-        # Configure Flask app
-        self.config["SECRET_KEY"] = secret_key
-        self.config["SQLALCHEMY_DATABASE_URI"] = db_uri
 
         # Register endpoints
         self.register_blueprint(view_home, url_prefix="/")
@@ -57,10 +53,13 @@ class Dashboard(Flask):
         self.twitch_manager = TwitchClientManager()
         self.user_manager = UserManager(self)
 
+        # Configure Flask app
+        self.config["SECRET_KEY"] = self.user_manager.password_policy.generate_password() if(secret_key is None) else secret_key
+        self.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+
         # Map callable vars and functions to Jinja environment
         self.jinja_env.globals.update(arun=run)
         self.jinja_env.globals.update(user=current_user)
-        self.jinja_env.globals.update(get_all_users=self.get_all_users)
 
         # Map controllers to Jinja environment
         self.jinja_env.globals.update(obs_manager=self.obs_manager)
@@ -72,9 +71,6 @@ class Dashboard(Flask):
             self.db.init_app(self)
             self.db.create_all()
 
-    def get_all_users(self: Dashboard) -> list[UserModel]:
-        res = self.db.session.query(UserModel).all()
-        return self.db.session.query(UserModel).all()
 
     def run(self: Dashboard) -> any:
         return super().run(host=self.host, port=self.port, debug=self.debug)

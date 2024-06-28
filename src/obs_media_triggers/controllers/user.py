@@ -34,17 +34,17 @@ class UserManager:
         self.password_policy = PasswordUtil()
         for k, v in password_policy.items():
             self.password_policy.configure_strength(k=v)
-        
+
         self.login_manager = LoginManager(app)
         self.login_manager.login_view = "view_auth.get_login"
         self.login_manager.login_message_category = "danger"
-        
+
         @self.login_manager.user_loader
         def load_user(id: int):
             return UserModel.query.filter_by(id=id).one_or_none()
 
     def signup(self: UserManager, username: str, password: str, password_confirm: str):
-        if self.get_user_by_name(username) is not None:
+        if self.get_id_by_name(username) is not None:
             raise RuntimeError("Username already taken!")
         elif password != password_confirm:
             raise RuntimeError("Passwords do not match!")
@@ -71,5 +71,11 @@ class UserManager:
     def logout(self: UserManager) -> None:
         logout_user()
 
-    def get_user_by_name(self: UserManager, username: str) -> Union[UserModel | None]:
-        return UserModel.query.filter_by(name=username).one_or_none()
+    def get_all_users(self: UserManager) -> list[UserModel]:
+        return UserModel.query.all()
+
+    def get_id_by_name(self: UserManager, username: str = None) -> Union[int | None]:
+        username = current_user.name if username is None else username
+        user: UserModel = UserModel.query.filter_by(name=username).one_or_none()
+        if user is not None:
+            return user.id
