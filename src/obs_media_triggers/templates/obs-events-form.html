@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}OBS Events{% endblock %}
+
+{% block js %}
+<script>
+    {% include "validation.js" %}
+</script>
+{% endblock %}
+
+{% block content %}
+<h1 class="pb-3">{{banner}} Event</h1>
+
+<form method="POST" class="row g-3 needs-validation" novalidate>
+    <div class="form-floating col-md-4">
+        <select class="form-select form-select-lg col-12" type="text" id="event_type" name="event_type">
+            <option value="default">Event Type</option>
+            {%with types = twitch_manager.get_all_event_types()%}
+            {% for t in types %}
+            <option value="{{t}}">{{t}}</option>
+            {% endfor %}
+            {%endwith%}
+        </select>
+        <label for="event_type">Event Type</label>
+
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-floating col-md-4">
+        <input type="number" class="form-control" id="event_qt" name="event_qt" placeholder="Quantity">
+        <label for="event_qt" class="form-label">Event Quantity</label>
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="event_allow_anon" name="event_allow_anon">
+        <label class="form-check-label" for="event_allow_anon">Allow From Anonymous</label>
+    </div>
+
+    <div class="form-floating col-md-4">
+        <select class="form-select form-select-lg col-12" type="text" id="event_src_template" name="event_src_template">
+            <option value="default">Soruce Template</option>
+            {% for s in obs_client.get_all_sources() %}
+            <option value="{{s}}">{{s}}</option>
+            {% endfor %}
+        </select>
+        <label for="event_type">Event Type</label>
+
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="col-12">
+        <button class="btn btn-primary" type="submit">Submit</button>
+    </div>
+</form>
+{% endblock %}

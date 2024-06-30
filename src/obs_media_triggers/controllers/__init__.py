@@ -1,7 +1,7 @@
 from .obs import OBSClientsManager
-from .twitch import TwitchClientManager
+from .twitch import TwitchClient
 
 __all__ = [
     "OBSClientsManager",
-    "TwitchClientManager",
+    "TwitchClient",
 ]

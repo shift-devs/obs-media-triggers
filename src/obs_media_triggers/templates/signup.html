@@ -10,18 +10,6 @@
 <h1 class="pb-3">Sign Up</h1>
 
 <form method="POST" class="row g-3 needs-validation" novalidate>
-    <div class="form-floating col-md-4">
-        <input type="text" class="form-control" id="first_name" name="first_name" placeholder="First Name" required>
-        <label for="first_name" class="form-label">First Name</label>
-        <div class="valid-feedback">Looks good!</div>
-    </div>
-
-    <div class="form-floating col-md-4">
-        <input type="text" class="form-control" id="last_name" name="last_name" placeholder="Last Name" required>
-        <label for="last_name" class="form-label">Last Name</label>
-        <div class="valid-feedback">Looks good!</div>
-    </div>
-
     <div class="col-md-3">
         <div class="input-group has-validation form-floating">
             <span class="input-group-text" id="username_prefix">@</span>
@@ -39,19 +27,19 @@
             Please provide a password that meets the following requirements:
             <div id="passwordHelp" class="form-text alert alert-warning" style="width: 40vw">
                 <ul>
-                    <li>Between {{ password_strength_reqs.min_length }} - {{ password_strength_reqs.max_length }}
+                    <li>Between {{ policy.min_length }} - {{ policy.max_length }}
                         Characters
                     </li>
-                    {% if password_strength_reqs.requires_lowercase %}
+                    {% if policy.requires_lowercase %}
                     <li>Atleast 1 Lowercase Character</li>
                     {% endif %}
-                    {% if password_strength_reqs.requires_uppercase %}
+                    {% if policy.requires_uppercase %}
                     <li>Atleast 1 Uppercase Character</li>
                     {% endif %}
-                    {% if password_strength_reqs.requires_special_chars %}
+                    {% if policy.requires_special_chars %}
                     <li>Atleast 1 Special Character</li>
                     {% endif %}
-                    {% if password_strength_reqs.requires_digits %}
+                    {% if policy.requires_digits %}
                     <li>Atleast 1 Digit</li>
                     {% endif %}
                 </ul>

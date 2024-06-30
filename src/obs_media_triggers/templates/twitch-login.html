@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Log In{% endblock %}
+
+{% block js %}
+<script>
+    {% include "validation.js" %}
+</script>
+{% endblock %}
+
+{% block content %}
+<h1 class="pb-3">Login With Twitch</h1>
+
+<form method="GET" action="{{url_for('view_twitch.get_login_redirect')}}">
+    <button class="btn btn-primary"
+        style="background-color: blueviolet; display: block;">
+        <i class="fa-brands fa-twitch"></i>
+        Sign In
+    </button>
+</form>
+
+{% endblock %}
