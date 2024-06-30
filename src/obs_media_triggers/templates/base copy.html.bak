@@ -30,43 +30,53 @@
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark" , style="color: #f3ebff">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('view_obs.get_root') }}" style="color: inherit;">OBS Media
-                Triggers</a>
+            <a class="navbar-brand" href="{{ url_for('view_home.get_root') }}">OBS Media Triggers</a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                    </li>
+                    <li><a id="obs-clients" href="{{ url_for('view_obs.get_root') }}" class="nav-item nav-link">OBS
+                            Clients</a></li>
+                    <li>
+                        {%if twitch_manager.is_logged_in()%}
+                        <div class="btn btn-primary" style="background-color: blueviolet; display: block;">
+                            <i class="fa-brands fa-twitch"></i>
+                            <img width="auto" height="1em" src="{{ twitch_manager.pfp }}"
+                                alt="Logged in as {{ twitch_manager.username }}">
+                            <b>{{twitch_manager.username}}</b>
+                        </div>
+                        {%else%}
+                        <form method="GET" action="{{url_for('view_twitch.get_root')}}">
+                            <button class="btn btn-primary"
+                                style="background-color: blueviolet; display: block;">
+                                <i class="fa-brands fa-twitch"></i>
+                                Sign In
+                            </button>
+                        </form>
+                        {%endif%}
+                    </li>
+                    {% else %}
+                    <li><a id="login" href="{{ url_for('view_auth.get_login') }}" class="nav-item nav-link">Login</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
 
-        {% if twitch.is_logged_in %}
-        <span class="badge" style="color: inherit; background-color: #772ce8;">
-            <img class="col-2 g-0" src="{{twitch.pfp_url}}">
-            <a style="text-decoration: none; color: inherit;" href="https://twitch.tv/{{twitch.username}}"
-                target="_blank"><b>{{ twitch.username }}</b></a>
-        </span>
-        <a id="logout" method="GET" href="{{ url_for('view_twitch.get_logout') }}" class="mx-5"
-            style="text-decoration: none; color: inherit;">
+        {% if user.is_authenticated %}
+        <a id="logout" href="{{ url_for('view_auth.get_logout') }}" class="mx-5"
+            style="text-decoration: none; color: #FFF;">
             <i class="fa-solid fa-right-from-bracket fa-xl"></i>
         </a>
         {% endif %}
-        <!-- <div class="collapse navbar-collapse" id="navbarNav">
-            <div class="btn btn-primary" style="background-color: #772ce8;">
-                <i class="fa-brands fa-twitch" style="display: flex;"></i>
-                <img src="{{ twitch.pfp_url }}" style="display: flex;">
-                <b style="display: flex;">{{ twitch.username }}</b>
-            </div>
-
-            <a id="logout" method="POST" href="{{ url_for('view_twitch.get_logout') }}" class="mx-5"
-                style="text-decoration: none; color: inherit;">
-                <i class="fa-solid fa-right-from-bracket fa-xl"></i>
-            </a>
-        </div> -->
     </nav>
-
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

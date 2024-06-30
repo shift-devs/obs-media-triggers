@@ -7,7 +7,6 @@ from ..models import OBSWSClientModel, EventModel
 from flask_sqlalchemy import SQLAlchemy
 from flask import current_app
 from obsws_python.error import OBSSDKError
-from .user import UserManager
 
 LOG = getLogger(__name__)
 
@@ -60,9 +59,9 @@ class OBSActiveClient(ReqClient):
         self.active_events.append(new_event)
 
     def get_all_sources(self: OBSActiveClient):
-        LOG.debug(f'Looking for sources in active scene: {self.active_scene}')
+        LOG.debug(f"Looking for sources in active scene: {self.active_scene}")
         items = self.get_scene_item_list(self.active_scene).scene_items
-        return list(map(lambda x: x['sourceName'], items))
+        return list(map(lambda x: x["sourceName"], items))
 
     def get_all_events(self: OBSActiveClient) -> list[EventModel]:
         return EventModel.query.all()
@@ -81,12 +80,7 @@ class OBSClientsManager:
     def __validate_permission(
         self: OBSClientsManager, db_info: OBSWSClientModel
     ) -> None:
-        users: UserManager = self.app.user_manager
-        user_id = users.get_id_by_name()
-        if db_info is not None and db_info.user_id != user_id:
-            raise AssertionError(
-                f"User #{user_id} does not have permission to access Client -> {db_info}"
-            )
+        return True
 
     def __getitem__(self: OBSClientsManager, id: int) -> OBSActiveClient:
         matches = list(filter(lambda x: x == id, self.active_clients))
@@ -116,12 +110,8 @@ class OBSClientsManager:
         except OBSSDKError as e:
             raise RuntimeError(e)
 
-    def add_client(
-        self: OBSClientsManager, user_id: int, host: str, port: int, password: str
-    ):
-        new_client = OBSWSClientModel(
-            user_id=user_id, host=host, port=port, password=password
-        )
+    def add_client(self: OBSClientsManager, host: str, port: int, password: str):
+        new_client = OBSWSClientModel(host=host, port=port, password=password)
         self.db.session.add(new_client)
         self.db.session.commit()
 
@@ -142,9 +132,7 @@ class OBSClientsManager:
         self.db.session.commit()
 
     def get_active_user_clients(self: OBSClientsManager) -> list[OBSActiveClient]:
-        users: UserManager = self.app.user_manager
-        user_id = users.get_id_by_name()
-        return OBSWSClientModel.query.filter_by(user_id=user_id).all()
+        return OBSWSClientModel.query.filter_by().all()
 
     def get_db_info_by_id(
         self: OBSClientsManager, id: int

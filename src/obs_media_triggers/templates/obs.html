@@ -3,7 +3,7 @@
 {% block title %}OBS Clients{% endblock %}
 
 {% block content %}
-<h1 class="pb-3">OBS clients</h1>
+<h1 class="pb-3">OBS Clients</h1>
 
 
 <table class="table text-break">
@@ -18,7 +18,7 @@
   </thead>
 
   <tbody>
-    {% for c in obs_manager.get_active_user_clients() %}
+    {% for c in obs.get_active_user_clients() %}
     <tr>
       <td>{{c.id}}</td>
       <td>{{c.host}}</td>
@@ -26,10 +26,10 @@
       <td>{{'*' * c.password.__len__()}}</td>
       <td class="w-75" style="display: flex;">
 
-        {%if obs_manager.is_disconnected(c.id)%}
+        {%if obs.is_disconnected(c.id)%}
         <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="Connect" data-bs-trigger="hover">
           <a class="btn btn-secondary" href="{{ url_for('view_obs.get_connect', id=c.id) }}" {%if
-            obs_manager.is_disconnected(c.id)%}disabled{%endif%}><i class="fa-solid fa-play"
+            obs.is_disconnected(c.id)%}disabled{%endif%}><i class="fa-solid fa-play"
               style="color: #00d700;"></i></a>
         </span>
 
