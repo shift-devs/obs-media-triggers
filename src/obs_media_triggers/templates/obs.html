@@ -44,7 +44,7 @@
         </span>
         {%else%}
         <span data-bs-toggle="popover" data-bs-placement="bottom" data-bs-content="View Events" data-bs-trigger="hover">
-          <a class="btn btn-secondary" href="{{ url_for('view_obs.get_events', id=c.id) }}"><i
+          <a class="btn btn-secondary" href="{{ url_for('view_events.get_root_id', id=c.id) }}"><i
               class="fa-solid fa-camera fa-1xl" style="color: #B197FC;"></i></a>
         </span>
 

@@ -42,7 +42,7 @@
 
         </div>
 
-        {% if twitch.is_logged_in %}
+        {% if user.is_authenticated %}
         <span class="badge" style="color: inherit; background-color: #772ce8;">
             <img class="col-2 g-0" src="{{twitch.pfp_url}}">
             <a style="text-decoration: none; color: inherit;" href="https://twitch.tv/{{twitch.username}}"
@@ -53,18 +53,6 @@
             <i class="fa-solid fa-right-from-bracket fa-xl"></i>
         </a>
         {% endif %}
-        <!-- <div class="collapse navbar-collapse" id="navbarNav">
-            <div class="btn btn-primary" style="background-color: #772ce8;">
-                <i class="fa-brands fa-twitch" style="display: flex;"></i>
-                <img src="{{ twitch.pfp_url }}" style="display: flex;">
-                <b style="display: flex;">{{ twitch.username }}</b>
-            </div>
-
-            <a id="logout" method="POST" href="{{ url_for('view_twitch.get_logout') }}" class="mx-5"
-                style="text-decoration: none; color: inherit;">
-                <i class="fa-solid fa-right-from-bracket fa-xl"></i>
-            </a>
-        </div> -->
     </nav>
 
 

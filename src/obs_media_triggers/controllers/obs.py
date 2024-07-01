@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+from time import sleep
 from typing import Union
 from logging import getLogger
+from .twitch import TwitchClient
 from obsws_python import ReqClient
-from ..models import OBSWSClientModel, EventModel
+from .events import EventSubsManager
+from ..models import OBSWSClientModel
 from flask_sqlalchemy import SQLAlchemy
-from flask import current_app
 from obsws_python.error import OBSSDKError
+from twitchAPI.object.eventsub import ChannelChatMessageEvent, ChannelChatMessageData
 
 LOG = getLogger(__name__)
 
 
 class OBSActiveClient(ReqClient):
+    DEFAULT_ACTIVE_SCENE = "NO_ACTIVE_SCENE"
+
     db: SQLAlchemy
     db_info: OBSWSClientModel
     id: int
@@ -19,63 +24,76 @@ class OBSActiveClient(ReqClient):
     port: int
     password: str
     active_scene: str
-    active_events: list[EventModel]
+    events: EventSubsManager
 
-    def __init__(self: OBSActiveClient, db_info: OBSWSClientModel, timeout: int = 1):
+    def __init__(
+        self: OBSActiveClient,
+        db: SQLAlchemy,
+        db_info: OBSWSClientModel,
+        twitch: TwitchClient,
+        timeout: int = 1,
+    ):
         super().__init__(
             host=db_info.host,
             port=db_info.port,
             password=db_info.password,
             timeout=timeout,
         )
-        self.db = current_app.db
+        self.db = db
         self.id = db_info.id
         self.host = db_info.host
         self.port = db_info.port
         self.password = db_info.password
-        self.active_scene = "default"
-        self.active_events = []
+        self.active_scene = OBSActiveClient.DEFAULT_ACTIVE_SCENE
+        self.events = EventSubsManager(db, twitch)
 
     def __eq__(self: OBSActiveClient, other_id: int) -> bool:
         return self.id == other_id
-
-    def add_event(
-        self: OBSActiveClient,
-        obs_id: int,
-        type: str,
-        quantity: int,
-        allow_anon: bool,
-        src_template: str,
-    ):
-        new_event = EventModel(
-            obs_id=obs_id,
-            type=type,
-            quantity=quantity,
-            allow_anon=allow_anon,
-            src_template=src_template,
-        )
-        self.db.session.add(new_event)
-        self.db.session.commit()
-        self.active_events.append(new_event)
 
     def get_all_sources(self: OBSActiveClient):
         LOG.debug(f"Looking for sources in active scene: {self.active_scene}")
         items = self.get_scene_item_list(self.active_scene).scene_items
         return list(map(lambda x: x["sourceName"], items))
 
-    def get_all_events(self: OBSActiveClient) -> list[EventModel]:
-        return EventModel.query.all()
+    def subscribe_to_event(self: OBSActiveClient, form: dict) -> None:
+        LOG.debug(f'Subscribing to event with payload: {form}')
+        self.events.add_event_sub(self.handle_chat_message)
+
+    # def toggle_media(self: OBSActiveClient, src_name: str) -> None:
+    #     scene_name = self.active_scene
+    #     item_id = self.get_scene_item_id(scene_name, src_name)
+    #     self.set_scene_item_enabled(scene_name, item_id, True)
+    #     sleep(3)
+    #     self.set_scene_item_enabled(scene_name, item_id, False)
+
+    async def handle_chat_message(self: OBSActiveClient, event: ChannelChatMessageEvent):
+        data: ChannelChatMessageData = event.event
+        cmd = data.message.text.title()
+        srcs = self.get_all_sources()
+
+        if(cmd in srcs):
+            LOG.debug(f"Enabling Source by command: {cmd}")
+            item_id = self.get_scene_item_id(self.active_scene, cmd).scene_item_id
+
+            if(item_id is None):
+                LOG.error(f'A source for cmd: {cmd} was not found!')
+                return
+
+            self.set_scene_item_enabled(self.active_scene, item_id, True)
+            sleep(3)
+            LOG.debug(f"Disabling {cmd}#{item_id}")
+            self.set_scene_item_enabled(self.active_scene, item_id, False)
 
 
 class OBSClientsManager:
     active_clients: list[OBSActiveClient]
     db: SQLAlchemy
-    app: object
+    twitch: TwitchClient
 
-    def __init__(self: OBSClientsManager, app: object):
+    def __init__(self: OBSClientsManager, db: SQLAlchemy, twitch: TwitchClient):
         self.active_clients = []
-        self.db = app.db
-        self.app = app
+        self.db = db
+        self.twitch = twitch
 
     def __validate_permission(
         self: OBSClientsManager, db_info: OBSWSClientModel
@@ -96,9 +114,9 @@ class OBSClientsManager:
             db_info: OBSWSClientModel = self.get_db_info_by_id(id)
             if db_info is None:
                 raise RuntimeError(f"Client #{id} was not found in the DB!")
-            new_client = OBSActiveClient(db_info)
-            LOG.debug(f"Active clinets: {new_client}")
+            new_client = OBSActiveClient(self.db, db_info, self.twitch)
             self.active_clients.append(new_client)
+            LOG.debug(f"Active client count: {len(self.active_clients)}")
         except OBSSDKError as e:
             raise RuntimeError(e)
 
@@ -107,6 +125,7 @@ class OBSClientsManager:
         try:
             client.disconnect()
             self.active_clients.remove(client)
+            LOG.debug(f"Active client count: {len(self.active_clients)}")
         except OBSSDKError as e:
             raise RuntimeError(e)
 

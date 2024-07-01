@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}OBS Events{% endblock %}
+
+{% block js %}
+<script>
+    {% include "validation.js" %}
+</script>
+{% endblock %}
+
+{% block content %}
+<h1 class="pb-3">{{banner}} Event</h1>
+
+<form method="POST" class="row g-3 needs-validation" novalidate>
+    <div class="form-floating col-md-4">
+        <select class="form-select form-select-lg col-12" type="text" id="e_type" name="e_type">
+            <option value="default" selected disabled hidden>Event Type</option>
+            {% for et in events.get_all_event_sub_types() %}
+            <option value="{{et}}">{{et}}</option>
+            {% endfor %}
+        </select>
+        <label for="e_type">Event Type</label>
+
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-floating col-md-4">
+        <input type="number" class="form-control" id="e_quantity" name="e_quantity" placeholder="Quantity">
+        <label for="e_quantity" class="form-label">Quantity</label>
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="e_allow_anon" name="e_allow_anon">
+        <label class="form-check-label" for="e_allow_anon">Allow From Anonymous</label>
+    </div>
+
+    <div class="form-floating col-md-4">
+        <select class="form-select form-select-lg col-12" type="text" id="e_template" name="e_template">
+            <option value="default" selected disabled hidden>OBS Soruce Template</option>
+            {% for s in obs.get_all_sources() %}
+            <option value="{{s}}">{{s}}</option>
+            {% endfor %}
+        </select>
+        <label for="e_template">Soruce Template</label>
+
+        <div class="valid-feedback">Looks good!</div>
+    </div>
+
+    <div class="col-12">
+        <button class="btn btn-primary" type="submit">Submit</button>
+    </div>
+</form>
+{% endblock %}

@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import random, string
 from .models import DB
-from asyncio import run
 from flask import Flask
 from logging import getLogger
 from flask_sqlalchemy import SQLAlchemy
-from .views import view_obs, view_twitch
 from flask_login import current_user, LoginManager
+from .views import view_events, view_obs, view_twitch
 from .controllers import OBSClientsManager, TwitchClient
 
 LOG = getLogger(__name__)
@@ -44,19 +43,20 @@ class Dashboard(Flask):
         # Register endpoints
         self.register_blueprint(view_obs, url_prefix="/")
         self.register_blueprint(view_twitch, url_prefix="/twitch/")
+        self.register_blueprint(view_events, url_prefix="/event/")
 
         # Setup Controlelrs
-        self.obs = OBSClientsManager(self)
-        self.twitch = TwitchClient(self, host=host, port=port)
-        self.login_manager = self.twitch.login_manager
+        self.twitch = TwitchClient(self, db=self.db, host=host, port=port)
+        self.obs = OBSClientsManager(db=self.db, twitch=self.twitch)
+        self.login_manager = self.twitch.get_login()
 
         # Configure Flask app
         self.config["SECRET_KEY"] = secret_key
         self.config["SQLALCHEMY_DATABASE_URI"] = db_uri
 
         # Map variables to Jinja environment
-        self.jinja_env.globals.update(obs=self.obs)
         self.jinja_env.globals.update(user=current_user)
+        self.jinja_env.globals.update(obs=self.obs)
         self.jinja_env.globals.update(twitch=self.twitch)
 
         # Initialize the database schemas and link to flask

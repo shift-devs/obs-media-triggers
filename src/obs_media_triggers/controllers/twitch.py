@@ -1,24 +1,26 @@
 from __future__ import annotations
 
 from asyncio import run
-from typing import Tuple, Union
+from typing import Awaitable, Union
+from flask import current_app
 from logging import getLogger
 from twitchAPI.helper import first
 from twitchAPI.type import AuthScope
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
-from ..models import TwitchOAuthUserModel
 from twitchAPI.oauth import UserAuthenticator
+from twitchAPI.twitch import Twitch, TwitchUser
+from ..models import TwitchOAuthUserModel, EventSubModel
 from twitchAPI.eventsub.websocket import EventSubWebsocket
-from flask_login import current_user, login_user, logout_user, LoginManager
-from twitchAPI.twitch import Twitch, TwitchUser, TwitchAPIException
 from .. import __app_host__, __app_port__, __app_id__, __app_secret__
+from flask_login import current_user, login_user, logout_user, LoginManager
 
 LOG = getLogger(__name__)
 
 
 class TwitchClient(Twitch):
     API_SCOPES = [
+        AuthScope.USER_READ_CHAT,
         AuthScope.USER_READ_EMAIL,
         AuthScope.USER_READ_SUBSCRIPTIONS,
         AuthScope.CHANNEL_READ_SUBSCRIPTIONS,
@@ -33,6 +35,7 @@ class TwitchClient(Twitch):
     def __init__(
         self: TwitchClient,
         app: object,
+        db: SQLAlchemy,
         scheme: str = "http",
         host: str = __app_host__,
         port: int = __app_port__,
@@ -47,7 +50,7 @@ class TwitchClient(Twitch):
         self.callback_url = f"{scheme}://{host}:{port}/twitch/login"
 
         # Setup Twitch peripheral managers
-        self.db = app.db
+        self.db = db
         self.auth = UserAuthenticator(
             self,
             TwitchClient.API_SCOPES,
@@ -64,6 +67,9 @@ class TwitchClient(Twitch):
         @self.login_manager.user_loader
         def load_user(id: str):
             return TwitchOAuthUserModel.query.filter_by(id=id).one_or_none()
+
+    def get_login(self: TwitchClient) -> LoginManager:
+        return self.login_manager
 
     def get_user_auth_url(self: TwitchClient):
         return self.auth.return_auth_url()
@@ -83,11 +89,10 @@ class TwitchClient(Twitch):
         run(self.authenticate_app(TwitchClient.API_SCOPES))
         db_user = self.sync_api_user_to_db()
         if db_user is None:
-            self.logout()
-            return None
-        else:
-            login_user(db_user)
-            return db_user
+            raise RuntimeError(f"Failed to create local sync of user: {db_user}!")
+        login_user(db_user)
+        LOG.debug(f"User logged in with info: {db_user}")
+        return db_user
 
     def logout(self: TwitchClient) -> None:
         if self.events is not None:
@@ -95,11 +100,14 @@ class TwitchClient(Twitch):
                 run(self.events.unsubscribe_all())
                 run(self.events.stop())
         if self.auth._server_running:
+            self.set_user_authentication(None, TwitchClient.API_SCOPES, None)
             run(self.auth.stop())
+
+        LOG.debug(f"User logged out!")
         logout_user()
 
     def sync_api_user_to_db(self: TwitchClient) -> Union[TwitchOAuthUserModel | None]:
-        api_user: TwitchUser = self.api_get_user()
+        api_user: TwitchUser = run(self.api_get_user())
 
         db_user = TwitchOAuthUserModel(
             id=api_user.id,
@@ -123,11 +131,22 @@ class TwitchClient(Twitch):
         except IntegrityError as e:
             LOG.error(f"Failed to add sync user {db_user} to DB with reason: {e}")
 
-    def api_get_user(self: TwitchClient) -> object:
-        return run(first(self.get_users()))
+    async def api_get_user(self: TwitchClient) -> object:
+        return await first(self.get_users())
 
     def db_get_user(self: TwitchClient) -> Union[TwitchOAuthUserModel | None]:
         return TwitchOAuthUserModel.query.filter_by(id=current_user.id).one_or_none()
+
+    async def subscribe_to_chat_message_event(
+        self: TwitchClient, callback: Awaitable
+    ) -> None:
+        try:
+            self.events.start()
+        except RuntimeError as e:
+            LOG.warn("Twitch ES server is already running!")
+        user: TwitchUser = current_user
+        res = await self.events.listen_channel_chat_message(user.id, user.id, callback)
+        LOG.info(f"Registered subscription with Twitch: {res}")
 
     @property
     def is_logged_in(self: TwitchClient) -> bool:
@@ -140,7 +159,7 @@ class TwitchClient(Twitch):
         #         LOG.error(f'Failed to auto-log-into Twitch with reason: {e}')
         #         logout_user()
         #         return False
-        return self.auth._is_closed
+        return self.get_user_auth_token() is not None
 
     @property
     def username(self: TwitchClient) -> str:
