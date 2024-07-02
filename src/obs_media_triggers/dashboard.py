@@ -18,6 +18,8 @@ def gen_secret(length: int = 64) -> str:
 
 
 class Dashboard(Flask):
+    DATA_DIR = "./"
+
     debug: bool = False
     host: str
     port: int
@@ -31,7 +33,6 @@ class Dashboard(Flask):
         host: str = "localhost",
         port: int = 7064,
         debug: bool = False,
-        db_uri: str = f"sqlite:///{DEFAULT_DB_NAME}",
         secret_key: str = "Something Random",
     ):
         super().__init__(__name__)
@@ -46,13 +47,18 @@ class Dashboard(Flask):
         self.register_blueprint(view_events, url_prefix="/event/")
 
         # Setup Controlelrs
-        self.twitch = TwitchClient(self, db=self.db, host=host, port=port)
+        self.twitch = TwitchClient(self, db=self.db, port=port)
         self.obs = OBSClientsManager(db=self.db, twitch=self.twitch)
         self.login_manager = self.twitch.get_login()
 
         # Configure Flask app
         self.config["SECRET_KEY"] = secret_key
-        self.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+        self.config["SQLALCHEMY_DATABASE_URI"] = (
+            f"sqlite:///{Dashboard.DATA_DIR}/{DEFAULT_DB_NAME}"
+        )
+        LOG.debug(
+            f'Initializing Database at -> {self.config["SQLALCHEMY_DATABASE_URI"]}'
+        )
 
         # Map variables to Jinja environment
         self.jinja_env.globals.update(user=current_user)

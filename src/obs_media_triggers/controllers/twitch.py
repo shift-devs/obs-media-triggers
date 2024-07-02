@@ -37,7 +37,7 @@ class TwitchClient(Twitch):
         app: object,
         db: SQLAlchemy,
         scheme: str = "http",
-        host: str = __app_host__,
+        host: str = 'localhost',
         port: int = __app_port__,
         app_id: str = __app_id__,
         app_secret: str = __app_secret__,
