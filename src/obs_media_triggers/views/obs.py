@@ -1,7 +1,7 @@
 from logging import getLogger
 from websocket import WebSocketAddressException
-from flask_login import login_required, current_user
-from ..controllers import OBSClientsManager, TwitchClient
+from flask_login import login_required
+from ..controllers import OBSClientsManager
 from flask import (
     flash,
     request,
