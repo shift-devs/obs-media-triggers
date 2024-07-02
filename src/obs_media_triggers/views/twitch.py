@@ -1,4 +1,3 @@
-from asyncio import run
 from logging import getLogger
 from flask import (
     flash,
@@ -10,12 +9,9 @@ from flask import (
     render_template,
 )
 from ..controllers import TwitchClient
-from flask_sqlalchemy import SQLAlchemy
-from twitchAPI.twitch import TwitchUser
 from ..models import TwitchOAuthUserModel
-from sqlalchemy.exc import IntegrityError
 from twitchAPI.oauth import UserAuthenticator
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_required
 
 LOG = getLogger(__name__)
 
@@ -34,7 +30,6 @@ def get_login_redirect():
 
 @view_twitch.route("/login", methods=["GET"])
 def get_login():
-    db: SQLAlchemy = current_app.db
     twitch: TwitchClient = current_app.twitch
     auth: UserAuthenticator = twitch.auth
 

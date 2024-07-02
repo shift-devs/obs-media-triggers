@@ -71,11 +71,11 @@ def post_id_add(id: int):
     obs: OBSActiveClient = current_app.obs[id]
     form = request.form
 
-    fomr_src_template = form.get("event_src_template")
-    form_type = form.get("event_type")
-
-    form_qt = form.get("event_qt")
-    form_allow_anon = form.get("event_allow_anon") is not None
+    # TODO: Reflect form in event creation
+    # fomr_src_template = form.get("event_src_template")
+    # form_type = form.get("event_type")
+    # form_qt = form.get("event_qt")
+    # form_allow_anon = form.get("event_allow_anon") is not None
 
     obs.subscribe_to_event(form)
 

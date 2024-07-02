@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from asyncio import run
 from typing import Awaitable, Union
-from flask import current_app
 from logging import getLogger
 from twitchAPI.helper import first
 from twitchAPI.type import AuthScope
@@ -10,9 +9,9 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.twitch import Twitch, TwitchUser
-from ..models import TwitchOAuthUserModel, EventSubModel
+from ..models import TwitchOAuthUserModel
 from twitchAPI.eventsub.websocket import EventSubWebsocket
-from .. import __app_host__, __app_port__, __app_id__, __app_secret__
+from .. import __app_port__, __app_id__, __app_secret__
 from flask_login import current_user, login_user, logout_user, LoginManager
 
 LOG = getLogger(__name__)
@@ -103,7 +102,7 @@ class TwitchClient(Twitch):
             self.set_user_authentication(None, TwitchClient.API_SCOPES, None)
             run(self.auth.stop())
 
-        LOG.debug(f"User logged out!")
+        LOG.debug("User logged out!")
         logout_user()
 
     def sync_api_user_to_db(self: TwitchClient) -> Union[TwitchOAuthUserModel | None]:
@@ -142,7 +141,7 @@ class TwitchClient(Twitch):
     ) -> None:
         try:
             self.events.start()
-        except RuntimeError as e:
+        except RuntimeError:
             LOG.warn("Twitch ES server is already running!")
         user: TwitchUser = current_user
         res = await self.events.listen_channel_chat_message(user.id, user.id, callback)
