@@ -2,6 +2,7 @@ from argparse import ArgumentParser, Namespace
 from . import __dist_name__, __description__, __version__, __app_host__, __app_port__
 from .dashboard import Dashboard
 from logging import getLogger, basicConfig, ERROR, INFO, NOTSET
+from os import getcwd
 
 LOG = getLogger(__name__)
 
@@ -54,15 +55,29 @@ def parse_args() -> Namespace:
         default=__app_port__,
         help="Port for the dashboard web application. (Default: 7064)",
     )
+    parser.add_argument(
+        "-D",
+        "--data-dir",
+        dest="data_dir",
+        metavar="Data Directory",
+        type=str,
+        default=getcwd(),
+        help="Directory to store persistent app data in. (Default: $PWD)",
+    )
     return parser.parse_args()
 
 
 def main():
+    # Parse CMD Line Args
     args = parse_args()
+
+    # Configure App
+    Dashboard.DATA_DIR = args.data_dir
     log_level = ERROR if (args.log_level is None) else args.log_level
     debug = log_level == NOTSET
     basicConfig(level=log_level)
 
+    # Create and run the dashboard
     app = Dashboard(args.dashboard_host, args.dashboard_port, debug=debug)
     app.run()
 

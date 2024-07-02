@@ -1,0 +1,14 @@
+services:
+  obs-media-triggers:
+    build: .
+    image: obs-media-triggers
+    container_name: obs-media-triggers
+    ports:
+      - 7064:7064
+    volumes:
+      - omt_data_dir:/srv/omt
+    environment:
+      - OMT_APP_SECRET=$OMT_APP_SECRET
+
+volumes:
+  omt_data_dir:
