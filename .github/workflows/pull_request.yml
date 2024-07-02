@@ -1,0 +1,51 @@
+name: pull-request
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint Code
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: "pip"
+
+      - name: Update Pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install Python Dependencies
+        run: python -m pip install pyflakes
+
+      - name: Lint with PyFlakes
+        run: pyflakes src/
+
+  test:
+    runs-on: ubuntu-latest
+    name: Test Code
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: "pip"
+
+      - name: Update Pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install Python Dependencies
+        run: python -m pip install pyflakes
+
+      - name: Run Unit Tests
+        run: python -m unittest test
