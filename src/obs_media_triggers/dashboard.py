@@ -19,7 +19,7 @@ def gen_secret(length: int = 64) -> str:
 
 
 class Dashboard(Flask):
-    DATA_DIR = './'
+    DATA_DIR = "./"
 
     debug: bool = False
     host: str
@@ -34,7 +34,6 @@ class Dashboard(Flask):
         host: str = "localhost",
         port: int = 7064,
         debug: bool = False,
-        data_dir: str = './',
         secret_key: str = "Something Random",
     ):
         super().__init__(__name__)
@@ -54,7 +53,12 @@ class Dashboard(Flask):
 
         # Configure Flask app
         self.config["SECRET_KEY"] = secret_key
-        self.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{data_dir}/{DEFAULT_DB_NAME}"
+        self.config["SQLALCHEMY_DATABASE_URI"] = (
+            f"sqlite:///{Dashboard.DATA_DIR}/{DEFAULT_DB_NAME}"
+        )
+        LOG.debug(
+            f'Initializing Database at -> {self.config["SQLALCHEMY_DATABASE_URI"]}'
+        )
 
         # Map variables to Jinja environment
         self.jinja_env.globals.update(obs=self.obs)
