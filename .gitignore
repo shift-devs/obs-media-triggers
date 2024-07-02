@@ -1,8 +1,9 @@
 # Custom
-**/demo.py
 **/user_token.json
-src/instance
-src/authorize
+**/src/instance
+**/src/authorize
+**/dist/*
+**/*.whl
 
 # Temporary and binary files
 *~
