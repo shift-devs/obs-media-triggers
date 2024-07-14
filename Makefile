@@ -1,6 +1,7 @@
 all: clean docker
 
 clean:
+	make -C docs clean
 	rm -rf build/ dist/ docker/*.whl
 
 py_wheel:
@@ -9,3 +10,7 @@ py_wheel:
 docker: py_wheel
 	find dist  -iname '*.whl' -exec mv {} docker \;
 	docker-compose --project-directory docker build
+
+
+docs:
+	make -C docs html

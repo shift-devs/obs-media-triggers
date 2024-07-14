@@ -1,16 +1,10 @@
 from logging import getLogger
-from websocket import WebSocketAddressException
+
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import login_required
+from websocket import WebSocketAddressException
+
 from ..controllers import OBSClientsManager
-from flask import (
-    flash,
-    request,
-    url_for,
-    redirect,
-    Blueprint,
-    current_app,
-    render_template,
-)
 
 LOG = getLogger(__name__)
 
@@ -26,9 +20,7 @@ def get_root():
 @view_obs.route("/add", methods=["GET"])
 @login_required
 def get_add():
-    return render_template(
-        "obs-form.html", banner="New", host="localhost", port="4455"
-    )
+    return render_template("obs-form.html", banner="New", host="localhost", port="4455")
 
 
 @view_obs.route("/add", methods=["POST"])

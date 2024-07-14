@@ -1,23 +1,37 @@
+"""Main Flask Application"""
+
 from __future__ import annotations
 
-import random, string
-from .models import DB
-from flask import Flask
+import random
+import string
 from logging import getLogger
+
+from flask import Flask
+from flask_login import LoginManager, current_user
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import current_user, LoginManager
-from .views import view_events, view_obs, view_twitch
+
 from .controllers import OBSClientsManager, TwitchClient
+from .models import DB
+from .views import view_events, view_obs, view_twitch
 
 LOG = getLogger(__name__)
 DEFAULT_DB_NAME = "obs-media-triggers.db"
 
 
 def gen_secret(length: int = 64) -> str:
+    """_summary_
+
+    :param length: Generate a random string, defaults to 64
+    :type length: int, optional
+    :return: Fixed-length string of random ASCII characters
+    :rtype: str
+    """
     return "".join(random.choice(string.printable) for _ in range(length))
 
 
 class Dashboard(Flask):
+    """Primary flask application for OBS Media Triggers Dashboard"""
+
     DATA_DIR = "./"
 
     debug: bool = False
@@ -35,6 +49,16 @@ class Dashboard(Flask):
         debug: bool = False,
         secret_key: str = "Something Random",
     ):
+        """Dashboard constructor
+        :param host: Host to bind application to, defaults to "localhost"
+        :type host: str, optional
+        :param port: Port to bind application to, defaults to 7064
+        :type port: int, optional
+        :param debug: Toggles debug mode, defaults to False
+        :type debug: bool, optional
+        :param secret_key: Secret string for SSL entcryption, defaults to "Something Random"
+        :type secret_key: str, optional
+        """
         super().__init__(__name__)
         self.debug = debug
         self.db = DB
@@ -53,12 +77,8 @@ class Dashboard(Flask):
 
         # Configure Flask app
         self.config["SECRET_KEY"] = secret_key
-        self.config["SQLALCHEMY_DATABASE_URI"] = (
-            f"sqlite:///{Dashboard.DATA_DIR}/{DEFAULT_DB_NAME}"
-        )
-        LOG.debug(
-            f'Initializing Database at -> {self.config["SQLALCHEMY_DATABASE_URI"]}'
-        )
+        self.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{Dashboard.DATA_DIR}/{DEFAULT_DB_NAME}"
+        LOG.debug("Initializing Database at -> %s", self.config["SQLALCHEMY_DATABASE_URI"])
 
         # Map variables to Jinja environment
         self.jinja_env.globals.update(user=current_user)
@@ -69,6 +89,8 @@ class Dashboard(Flask):
         with self.app_context():
             self.db.init_app(self)
             self.db.create_all()
+            self.obs.connect_all_db_clients()
+            # self.twitch.login_with_db_user()
 
-    def run(self: Dashboard) -> any:
-        return super().run(host=self.host, port=self.port, debug=self.debug)
+    def run(self: Dashboard, *args) -> any:
+        return super().run(host=self.host, port=self.port, debug=self.debug, *args)

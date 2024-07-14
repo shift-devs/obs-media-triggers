@@ -1,5 +1,5 @@
 from .events import EventSubsManager
-from .obs import OBSClientsManager, OBSActiveClient
+from .obs import OBSActiveClient, OBSClientsManager
 from .twitch import TwitchClient
 
 __all__ = [

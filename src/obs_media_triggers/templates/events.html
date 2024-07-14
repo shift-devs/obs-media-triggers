@@ -5,45 +5,35 @@
 {% block content %}
 <h1 class="pb-3 mb-5">OBS Events</h1>
 
-<form method="POST" action="{{ url_for('view_events.post_id_scene', id=obs.id) }}">
-  <select class="form-select form-select-lg col-12" type="text" id="active_scene" name="active_scene">
-    <option value="NO_ACTIVE_SCENE" selected disabled hidden>Select Active Scene</option>
-    {% for s in obs.get_scene_list()['scenes'] %}
-    <option value="{{s['sceneName']}}">{{s['sceneName']}}</option>
-    {% endfor %}
-  </select>
-  <div class="col-12">
-    <button class="btn btn-primary" type="submit">Submit</button>
-  </div>
-</form>
-
 <table class="table text-break">
   <thead>
     <tr>
       <th scope="col">ID</th>
       <th scope="col">OBS ID</th>
       <th scope="col">Type</th>
-      <th scope="col">Quantity</th>
-      <th scope="col">Allow Anonymous</th>
-      <th scope="col">Item Template</th>
+      <th scope="col">Scene Name</th>
+      <th scope="col">Source Name</th>
+      <th scope="col">Additional Properties</th>
       <th scope="col">Actions</th>
     </tr>
   </thead>
 
   <tbody>
+    {% for e in events.get_all_events(obs.id) %}
     <tr>
-      {% for e in events.get_all_event_subs(obs.id) %}
       <td scope="col">{{e.id}}</td>
-      <td scope="col">{{e.obs_id}}</td>
+      <td scope="col">{{e.id}}</td>
       <td scope="col">{{e.type}}</td>
-      <td scope="col">{{e.quantity}}</td>
-      <td scope="col">{{e.allow_anon}}</td>
-      <td scope="col">{{e.src_template}}</td>
+      <td scope="col">{{e.scene_name}}</td>
+      <td scope="col">{{e.source_name}}</td>
       <td scope="col">
-        <a href="./">Start Listening</a>
+        {% for k,v in e.fields.items() %}
+        {{k.title().replace('E_', '')}}: {{v.title()}},
+        {% endfor %}
       </td>
-      {% endfor %}
+      <td>[Edit] [Delete]</td>
     </tr>
+    {% endfor %}
   </tbody>
 </table>
 

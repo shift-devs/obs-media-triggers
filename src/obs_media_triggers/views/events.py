@@ -1,15 +1,10 @@
 from logging import getLogger
+
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import login_required
-from ..controllers import EventSubsManager, OBSClientsManager, OBSActiveClient
-from flask import (
-    flash,
-    url_for,
-    request,
-    redirect,
-    Blueprint,
-    current_app,
-    render_template,
-)
+
+from ..models import EventTypes
+from ..controllers import EventSubsManager, OBSActiveClient, OBSClientsManager
 
 LOG = getLogger(__name__)
 
@@ -39,10 +34,7 @@ def post_id_scene(id: int):
     obs: OBSClientsManager = current_app.obs
     client: OBSActiveClient = obs[id]
 
-    if (
-        form_active_scene is not None
-        and form_active_scene != OBSActiveClient.DEFAULT_ACTIVE_SCENE
-    ):
+    if form_active_scene is not None and form_active_scene != OBSActiveClient.DEFAULT_ACTIVE_SCENE:
         client.active_scene = form_active_scene
         msg = f"Set active scene to {form_active_scene} for {client}"
         LOG.debug(msg)
@@ -53,7 +45,7 @@ def post_id_scene(id: int):
             category="danger",
         )
 
-    return redirect(url_for("view_events.get_root_id", id=id))
+    return redirect(url_for("view_events.get_id_add", id=id))
 
 
 @view_events.route("/<int:id>/add", methods=["GET"])
@@ -71,17 +63,21 @@ def post_id_add(id: int):
     obs: OBSActiveClient = current_app.obs[id]
     form = request.form
 
-    # TODO: Reflect form in event creation
-    # fomr_src_template = form.get("event_src_template")
-    # form_type = form.get("event_type")
-    # form_qt = form.get("event_qt")
-    # form_allow_anon = form.get("event_allow_anon") is not None
+    form = form.to_dict()
+    form['e_scene_name'] = obs.active_scene
 
-    obs.subscribe_to_event(form)
+    form_event_type = form['e_type'].replace(' ', '_').upper()
+    event_type = EventTypes[form_event_type]
+    add_event_handle = {
+        EventTypes.CHANNEL_CHAT_MESSAGE: obs.add_twitch_chat_message_event,
+        EventTypes.CHANNEL_SUBSCRIPTION_GIFT: obs.add_twitch_gift_sub_event,
+    }[event_type]
 
-    msg = f"Created events with form: {form}"
+    add_event_handle(form)
+    msg = f"Created a {event_type} event!"
     LOG.debug(msg)
     flash(msg, category="success")
+    
     return redirect(url_for("view_events.get_root_id", id=id))
     # try:
     # except RuntimeError as e:

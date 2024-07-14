@@ -1,15 +1,23 @@
 from __future__ import annotations
 
+from logging import getLogger
 from time import sleep
 from typing import Union
-from logging import getLogger
-from .twitch import TwitchClient
-from obsws_python import ReqClient
-from .events import EventSubsManager
-from ..models import OBSWSClientModel
+
 from flask_sqlalchemy import SQLAlchemy
+from obsws_python import ReqClient
 from obsws_python.error import OBSSDKError
-from twitchAPI.object.eventsub import ChannelChatMessageEvent, ChannelChatMessageData
+from twitchAPI.object.eventsub import (
+    ChannelChatMessageData,
+    ChannelChatMessageEvent,
+    ChannelSubscriptionGiftData,
+    ChannelSubscriptionGiftEvent,
+)
+
+from functools import partial
+from ..models import OBSWSClientModel, EventTypes, EventSubModel
+from .events import EventSubsManager
+from .twitch import TwitchClient
 
 LOG = getLogger(__name__)
 
@@ -19,7 +27,7 @@ class OBSActiveClient(ReqClient):
 
     db: SQLAlchemy
     db_info: OBSWSClientModel
-    id: int
+    obs_id: int
     host: str
     port: int
     password: str
@@ -50,39 +58,119 @@ class OBSActiveClient(ReqClient):
     def __eq__(self: OBSActiveClient, other_id: int) -> bool:
         return self.id == other_id
 
-    def get_all_sources(self: OBSActiveClient):
-        LOG.debug(f"Looking for sources in active scene: {self.active_scene}")
-        items = self.get_scene_item_list(self.active_scene).scene_items
+    def is_active_scene(self: OBSActiveClient, scene_name: str = None) -> bool:
+        scene_name = OBSActiveClient.DEFAULT_ACTIVE_SCENE if scene_name is None else scene_name
+        return self.active_scene.lower() == scene_name.lower()
+
+    def get_all_sources(self: OBSActiveClient, scene_name: str = None):
+        scene_name = self.active_scene if scene_name is None else scene_name
+
+        if scene_name == OBSActiveClient.DEFAULT_ACTIVE_SCENE:
+            LOG.debug("No active scene has been set! Skipping DB query!")
+            return []
+        LOG.debug("Looking for sources in active scene: %s", scene_name)
+        items = self.get_scene_item_list(scene_name).scene_items
         return list(map(lambda x: x["sourceName"], items))
 
-    def subscribe_to_event(self: OBSActiveClient, form: dict) -> None:
-        LOG.debug(f'Subscribing to event with payload: {form}')
-        self.events.add_event_sub(self.handle_chat_message)
+    def duplicate_source(self: OBSActiveClient, scene_name: str, source_name: str) -> object:
+        source_id = self.get_scene_item_id(
+            scene_name=scene_name, source_name=source_name
+        ).scene_item_id
+        return self.duplicate_scene_item(
+            scene_name=scene_name,
+            item_id=source_id,
+            dest_scene_name=scene_name,
+        )
 
-    # def toggle_media(self: OBSActiveClient, src_name: str) -> None:
-    #     scene_name = self.active_scene
-    #     item_id = self.get_scene_item_id(scene_name, src_name)
-    #     self.set_scene_item_enabled(scene_name, item_id, True)
-    #     sleep(3)
-    #     self.set_scene_item_enabled(scene_name, item_id, False)
+    def show_duplicate_source(
+        self: OBSActiveClient, scene_name: str, source_name: str, duration: int
+    ) -> None:
+        dupe_id = self.duplicate_source(scene_name=scene_name, source_name=source_name)
+        self.set_scene_item_enabled(scene_name=scene_name, item_id=dupe_id, enabled=True)
+        sleep(duration)
+        self.set_scene_item_enabled(scene_name=scene_name, item_id=dupe_id, enabled=False)
+        self.remove_scene_item(scene_name=scene_name, item_id=dupe_id)
+
+    def add_twitch_chat_message_event(self: OBSActiveClient, form_fields: dict) -> None:
+        LOG.debug("Subscribing to event with payload: %s", form_fields)
+        scene_name = form_fields["e_scene_name"]
+        source_name = form_fields["e_source_name"]
+        self.events.twitch_add_chat_message_event(
+            obs_id=self.id,
+            scene_name=scene_name,
+            source_name=source_name,
+            form_fields=form_fields,
+            callback=self.handle_chat_message,
+        )
+
+    def add_twitch_gift_sub_event(self: OBSActiveClient, form_fields: dict) -> None:
+        LOG.debug("Subscribing to event with payload: %s", form_fields)
+        scene_name = form_fields["e_scene_name"]
+        source_name = form_fields["e_source_name"]
+        self.events.twitch_add_gift_sub_event(
+            obs_id=self.id,
+            scene_name=scene_name,
+            source_name=source_name,
+            form_fields=form_fields,
+            callback=self.handle_chat_message,
+        )
+
+    @staticmethod
+    def __req_fields_are_present(fields: list[str], fields_dict: dict) -> bool:
+        for name in fields:
+            try:
+                assert fields_dict.get(name) is not None
+            except AssertionError as e:
+                LOG.error("Expected %s in %s but was not found!", name, fields_dict)
+                return False
+        return True
+
+    async def handle_gift_subscription(self: OBSActiveClient, event: ChannelSubscriptionGiftEvent):
+        gift: ChannelSubscriptionGiftData = event.event
+        conditions: List[EventSubModel] = self.events.get_events_by_type(
+            EventTypes.CHANNEL_SUBSCRIPTION_GIFT
+        )
+        LOG.debug("Checking %s conditions for %sx Gift-Sub event!", len(conditions), gift.total)
+        for cnd in conditions:
+            cnd: EventSubModel
+
+            if not OBSActiveClient.__req_fields_are_present(
+                ["e_quantity", "e_allow_anon", cnd.fields]
+            ):
+                continue
+
+            req_sub_quantity = int(cnd.fields["e_quantity"])
+            allow_anon = bool(cnd.fields["e_allow_anon"])
+
+            condition_is_met = not (not allow_anon and gift.is_anonymous()) and (
+                gift.total >= req_sub_quantity
+            )
+
+            if condition_is_met:
+                self.show_duplicate_source(
+                    scene_name=cnd.scene_name, source_name=cnd.source_name, duration=4
+                )
 
     async def handle_chat_message(self: OBSActiveClient, event: ChannelChatMessageEvent):
-        data: ChannelChatMessageData = event.event
-        cmd = data.message.text.title()
-        srcs = self.get_all_sources()
-
-        if(cmd in srcs):
-            LOG.debug(f"Enabling Source by command: {cmd}")
-            item_id = self.get_scene_item_id(self.active_scene, cmd).scene_item_id
-
-            if(item_id is None):
-                LOG.error(f'A source for cmd: {cmd} was not found!')
-                return
-
-            self.set_scene_item_enabled(self.active_scene, item_id, True)
-            sleep(3)
-            LOG.debug(f"Disabling {cmd}#{item_id}")
-            self.set_scene_item_enabled(self.active_scene, item_id, False)
+        chat: ChannelChatMessageData = event.event
+        conditions: List[EventSubModel] = self.events.get_events_by_type(
+            EventTypes.CHANNEL_SUBSCRIPTION_GIFT
+        )
+        LOG.debug(
+            "Checking %s conditions for Chat-Message event from %s!",
+            len(conditions),
+            chat.chatter_user_name,
+        )
+        for cnd in conditions:
+            cnd: EventSubModel
+            if not OBSActiveClient.__req_fields_are_present(["e_msg_contains", cnd.fields]):
+                continue
+            msg_contains = cnd.fields["e_msg_contains"]
+            condition_is_met = ()
+            if condition_is_met:
+                self.show_duplicate_source(
+                    scene_name=scene_name, source_name=source_name, duration=4
+                )
 
 
 class OBSClientsManager:
@@ -95,67 +183,72 @@ class OBSClientsManager:
         self.db = db
         self.twitch = twitch
 
-    def __validate_permission(
-        self: OBSClientsManager, db_info: OBSWSClientModel
-    ) -> None:
+    def __validate_permission(self: OBSClientsManager, db_info: OBSWSClientModel) -> None:
+        LOG.debug("Validating request for db entry: %s", db_info)
         return True
 
-    def __getitem__(self: OBSClientsManager, id: int) -> OBSActiveClient:
-        matches = list(filter(lambda x: x == id, self.active_clients))
+    def __getitem__(self: OBSClientsManager, uid: int) -> OBSActiveClient:
+        matches = list(filter(lambda x: x == uid, self.active_clients))
         if len(matches) == 0:
-            raise IndexError(f"Client #{id} was not found among the active clients!")
+            raise IndexError(f"Client #{uid} was not found among the active clients!")
         return matches[0]
 
-    def is_disconnected(self: OBSClientsManager, id: int) -> bool:
-        return len(list(filter(lambda x: x.id == id, self.active_clients))) == 0
+    def is_disconnected(self: OBSClientsManager, uid: int) -> bool:
+        return len(list(filter(lambda x: x.id == uid, self.active_clients))) == 0
 
-    def connect_client(self: OBSClientsManager, id: int) -> None:
+    def connect_client(self: OBSClientsManager, uid: int) -> None:
         try:
-            db_info: OBSWSClientModel = self.get_db_info_by_id(id)
+            db_info: OBSWSClientModel = self.get_db_info_by_id(uid)
             if db_info is None:
-                raise RuntimeError(f"Client #{id} was not found in the DB!")
+                raise RuntimeError(f"Client #{uid} was not found in the DB!")
             new_client = OBSActiveClient(self.db, db_info, self.twitch)
             self.active_clients.append(new_client)
-            LOG.debug(f"Active client count: {len(self.active_clients)}")
+            LOG.debug("Active client count: %s", len(self.active_clients))
         except OBSSDKError as e:
-            raise RuntimeError(e)
+            LOG.error(e)
+            raise e
+    
+    def connect_all_db_clients(self: OBSClientsManager) -> None:
+        clients = self.get_active_user_clients()
+        for c in clients:
+            if(self.is_disconnected(c.id)):
+                self.connect_client(c.id)
 
-    def disconnect_client(self: OBSClientsManager, id: int) -> None:
-        client = self[id]
+    def disconnect_client(self: OBSClientsManager, uid: int) -> None:
+        client = self[uid]
         try:
             client.disconnect()
             self.active_clients.remove(client)
-            LOG.debug(f"Active client count: {len(self.active_clients)}")
+            LOG.debug("Active client count: %s", len(self.active_clients))
         except OBSSDKError as e:
-            raise RuntimeError(e)
+            LOG.error(e)
+            raise e
 
     def add_client(self: OBSClientsManager, host: str, port: int, password: str):
         new_client = OBSWSClientModel(host=host, port=port, password=password)
         self.db.session.add(new_client)
         self.db.session.commit()
 
-    def update_client(self: OBSClientsManager, id: int, values: dict):
-        db_info = OBSWSClientModel.query.filter_by(id=id).one_or_none()
+    def update_client(self: OBSClientsManager, uid: int, values: dict):
+        db_info = OBSWSClientModel.query.filter_by(id=uid).one_or_none()
         if db_info is None:
             raise RuntimeError("client not found")
         self.__validate_permission(db_info)
-        OBSWSClientModel.query.filter_by(id=id).update(values)
+        OBSWSClientModel.query.filter_by(id=uid).update(values)
         self.db.session.commit()
 
-    def delete_client(self: OBSClientsManager, id: int):
-        db_info = OBSWSClientModel.query.filter_by(id=id).one_or_none()
+    def delete_client(self: OBSClientsManager, uid: int):
+        db_info = OBSWSClientModel.query.filter_by(id=uid).one_or_none()
         if db_info is None:
             raise RuntimeError("client not found")
         self.__validate_permission(db_info)
         self.db.session.delete(db_info)
         self.db.session.commit()
 
-    def get_active_user_clients(self: OBSClientsManager) -> list[OBSActiveClient]:
-        return OBSWSClientModel.query.filter_by().all()
+    def get_active_user_clients(self: OBSClientsManager) -> List[OBSWSClientModel]:
+        return OBSWSClientModel.query.all()
 
-    def get_db_info_by_id(
-        self: OBSClientsManager, id: int
-    ) -> Union[OBSWSClientModel | None]:
-        db_info = OBSWSClientModel.query.filter_by(id=id).one_or_none()
+    def get_db_info_by_id(self: OBSClientsManager, uid: int) -> Union[OBSWSClientModel | None]:
+        db_info = OBSWSClientModel.query.filter_by(id=uid).one_or_none()
         self.__validate_permission(db_info)
         return db_info

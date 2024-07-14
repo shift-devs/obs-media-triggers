@@ -1,17 +1,11 @@
 from logging import getLogger
-from flask import (
-    flash,
-    request,
-    url_for,
-    redirect,
-    Blueprint,
-    current_app,
-    render_template,
-)
+
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from flask_login import login_required
+from twitchAPI.oauth import UserAuthenticator
+
 from ..controllers import TwitchClient
 from ..models import TwitchOAuthUserModel
-from twitchAPI.oauth import UserAuthenticator
-from flask_login import login_required
 
 LOG = getLogger(__name__)
 

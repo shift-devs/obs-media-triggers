@@ -1,8 +1,9 @@
 from argparse import ArgumentParser, Namespace
-from . import __dist_name__, __description__, __version__, __app_host__, __app_port__
-from .dashboard import Dashboard
-from logging import getLogger, basicConfig, ERROR, INFO, NOTSET
+from logging import ERROR, INFO, NOTSET, basicConfig, getLogger
 from os import getcwd
+
+from . import __app_host__, __app_port__, __description__, __dist_name__, __version__
+from .dashboard import Dashboard
 
 LOG = getLogger(__name__)
 
@@ -80,6 +81,9 @@ def main():
     # Create and run the dashboard
     app = Dashboard(args.dashboard_host, args.dashboard_port, debug=debug)
     app.run()
+    # try:
+    # except KeyboardInterrupt:
+    #     LOG.info('Gracefully closing...')
 
 
 if __name__ == "__main__":
